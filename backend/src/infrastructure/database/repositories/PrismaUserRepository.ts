@@ -2,6 +2,17 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import { IUserRepository } from '@domain/repositories/IUserRepository';
 import { User } from '@domain/entities/User';
 
+function toPrismaRole(role: string): UserRole {
+  const map: Record<string, UserRole> = {
+    student: UserRole.STUDENT,
+    trainer: UserRole.TRAINER,
+    admin: UserRole.COLLEGE_ADMIN,
+    college_admin: UserRole.COLLEGE_ADMIN,
+    super_admin: UserRole.SUPER_ADMIN,
+  };
+  return map[role] ?? (role as UserRole);
+}
+
 export class PrismaUserRepository implements IUserRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -61,7 +72,7 @@ export class PrismaUserRepository implements IUserRepository {
         password: user.password,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role as UserRole,
+        role: toPrismaRole(user.role),
         phone: user.phone,
         avatar: user.avatar,
         isVerified: user.isVerified,
@@ -81,7 +92,7 @@ export class PrismaUserRepository implements IUserRepository {
     if (data.password !== undefined) updateData.password = data.password;
     if (data.firstName !== undefined) updateData.firstName = data.firstName;
     if (data.lastName !== undefined) updateData.lastName = data.lastName;
-    if (data.role !== undefined) updateData.role = data.role;
+    if (data.role !== undefined) updateData.role = toPrismaRole(data.role);
     if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.avatar !== undefined) updateData.avatar = data.avatar;
     if (data.isVerified !== undefined) updateData.isVerified = data.isVerified;
@@ -110,7 +121,7 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async findByRole(role: string): Promise<User[]> {
-    const users = await this.prisma.user.findMany({ where: { role: role as UserRole } });
+    const users = await this.prisma.user.findMany({ where: { role: toPrismaRole(role) } });
     return users.map((u) => this.mapToEntity(u));
   }
 

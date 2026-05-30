@@ -111,7 +111,7 @@ const refreshTokenRepo = {
 const { repositories, services } = container;
 
 export const authController = new AuthController(
-  new RegisterUseCase(repositories.userRepository as never, repositories.collegeRepository as never, services.emailService as never, passwordHasher as never),
+  new RegisterUseCase(repositories.userRepository as never, services.emailService as never, passwordHasher as never),
   new LoginUseCase(repositories.userRepository as never, passwordHasher as never, tokenService, refreshTokenRepo),
   new ForgotPasswordUseCase(repositories.userRepository as never, services.emailService as never),
   new ResetPasswordUseCase(repositories.userRepository as never, passwordHasher as never),

@@ -145,12 +145,14 @@ export default function RegisterPage() {
     setSuccess('');
     setLoading(true);
     try {
-      const name = `${values.firstName} ${values.lastName}`.trim();
       await register({
-        name,
+        firstName: values.firstName,
+        lastName: values.lastName,
         email: values.email,
         password: values.password,
         role: values.role,
+        phone: values.phone || undefined,
+        collegeCode: values.collegeCode || undefined,
       });
       setSuccess(
         role === 'admin'

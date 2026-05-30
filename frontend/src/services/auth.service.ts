@@ -5,7 +5,7 @@ export const authService = {
   login: (payload: { email: string; password: string }) =>
     api.post<ApiResponse<{ token: string; user: User }>>('/auth/login', payload),
 
-  register: (payload: { name: string; email: string; password: string; role?: string; college?: string }) =>
+  register: (payload: { firstName: string; lastName: string; email: string; password: string; role?: string; phone?: string; collegeCode?: string }) =>
     api.post<ApiResponse<User>>('/auth/register', payload),
 
   getMe: () =>

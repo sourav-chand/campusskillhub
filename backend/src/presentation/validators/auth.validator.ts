@@ -3,9 +3,10 @@ import { z } from 'zod';
 export const RegisterSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters').max(100),
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  firstName: z.string().min(1, 'First name is required').max(50),
+  lastName: z.string().min(1, 'Last name is required').max(50),
   role: z.enum(['student', 'trainer', 'admin', 'college_admin']).default('student'),
-  collegeId: z.string().uuid().optional(),
+  collegeCode: z.string().optional(),
   phone: z.string().regex(/^\+?[\d\s-]{10,15}$/, 'Invalid phone number').optional(),
 });
 

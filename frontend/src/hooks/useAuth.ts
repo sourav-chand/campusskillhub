@@ -13,11 +13,13 @@ interface LoginPayload {
 }
 
 interface RegisterPayload {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   role?: string;
-  college?: string;
+  phone?: string;
+  collegeCode?: string;
 }
 
 export function useAuth() {
