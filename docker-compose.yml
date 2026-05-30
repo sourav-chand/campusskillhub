@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: campusskill-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: campusskill
+      POSTGRES_PASSWORD: campusskill_secret
+      POSTGRES_DB: campusskill_hub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - campusskill-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campusskill -d campusskill_hub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: campusskill-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://campusskill:campusskill_secret@postgres:5432/campusskill_hub
+      JWT_SECRET: change-this-to-a-secure-random-string
+      JWT_REFRESH_SECRET: change-this-to-another-secure-random-string
+      CORS_ORIGIN: http://localhost:3000
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: ""
+      SMTP_PASS: ""
+    ports:
+      - "5000:5000"
+    networks:
+      - campusskill-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: campusskill-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    networks:
+      - campusskill-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  campusskill-network:
+    driver: bridge

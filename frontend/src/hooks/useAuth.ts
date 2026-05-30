@@ -1,0 +1,72 @@
+'use client';
+
+import { useCallback } from 'react';
+import { useAtom } from 'jotai';
+import { userAtom, tokenAtom } from '@/store/auth';
+import * as authLib from '@/lib/auth';
+import api from '@/lib/axios';
+import type { User } from '@/types';
+
+interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+  college?: string;
+}
+
+export function useAuth() {
+  const [user, setUser] = useAtom(userAtom);
+  const [token, setToken] = useAtom(tokenAtom);
+
+  const login = useCallback(
+    async (payload: LoginPayload) => {
+      const { data } = await api.post('/auth/login', payload);
+      const { token: jwt, user: userData } = data.data;
+      authLib.setToken(jwt);
+      authLib.setUser(userData);
+      setToken(jwt);
+      setUser(userData);
+      return userData;
+    },
+    [setToken, setUser],
+  );
+
+  const register = useCallback(
+    async (payload: RegisterPayload) => {
+      const { data } = await api.post('/auth/register', payload);
+      return data.data;
+    },
+    [],
+  );
+
+  const logout = useCallback(() => {
+    authLib.removeToken();
+    setToken(null);
+    setUser(null);
+  }, [setToken, setUser]);
+
+  const getMe = useCallback(async () => {
+    const { data } = await api.get<{ success: boolean; data: User }>('/auth/me');
+    setUser(data.data);
+    authLib.setUser(data.data);
+    return data.data;
+  }, [setUser]);
+
+  const isAuthenticated = !!token;
+
+  return {
+    user,
+    token,
+    isAuthenticated,
+    login,
+    register,
+    logout,
+    getMe,
+  };
+}

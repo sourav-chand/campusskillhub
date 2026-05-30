@@ -1,0 +1,666 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  COLLEGE_ADMIN
+  TRAINER
+  STUDENT
+}
+
+enum CollegeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CourseCategory {
+  FULL_STACK_DEVELOPMENT
+  DEVOPS
+  CLOUD_COMPUTING
+  JAVA
+  DOTNET
+  PYTHON
+  DATA_SCIENCE
+}
+
+enum AssessmentType {
+  MCQ
+  CODING
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ProjectType {
+  MINOR
+  MAJOR
+}
+
+enum ProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum CertificateStatus {
+  PENDING
+  GENERATED
+  REVOKED
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String
+  firstName       String
+  lastName        String
+  role            UserRole
+  phone           String?
+  avatar          String?
+  isVerified      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  verificationToken String?
+  resetToken      String?
+  resetTokenExp   DateTime?
+  lastLogin       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  collegeAdmin    CollegeAdmin?
+  trainer         Trainer?
+  student         Student?
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  sentMessages    Notification[] @relation("NotificationSender")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model College {
+  id              String        @id @default(uuid())
+  name            String
+  code            String        @unique
+  address         String
+  city            String
+  state           String
+  pincode         String
+  phone           String
+  email           String
+  website         String?
+  logo            String?
+  status          CollegeStatus @default(PENDING)
+  maxStudents     Int           @default(500)
+  subscriptionEnd DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  collegeAdmins   CollegeAdmin[]
+  courses         Course[]
+  trainers        Trainer[]
+  students        Student[]
+  subscriptions   Subscription[]
+
+  @@index([code])
+  @@index([status])
+  @@map("colleges")
+}
+
+model CollegeAdmin {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  collegeId  String
+  college    College  @relation(fields: [collegeId], references: [id])
+  department String?
+  designation String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([collegeId])
+  @@map("college_admins")
+}
+
+model Trainer {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  collegeId   String
+  college     College  @relation(fields: [collegeId], references: [id])
+  specialization String?
+  bio         String?
+  expertise   String[]
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses     Course[]
+  liveClasses LiveClass[]
+  assignments Assignment[]
+
+  @@index([collegeId])
+  @@map("trainers")
+}
+
+model Student {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  collegeId     String
+  college       College  @relation(fields: [collegeId], references: [id])
+  rollNumber    String   @unique
+  batch         String?
+  semester      Int?
+  enrollmentYear Int?
+  phone         String?
+  address       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  enrollments   Enrollment[]
+  attendance    Attendance[]
+  mcqAttempts   MCQAttempt[]
+  codingSubmissions CodingSubmission[]
+  assignmentSubmissions AssignmentSubmission[]
+  projects      Project[]
+  certificates  Certificate[]
+
+  @@index([collegeId])
+  @@index([rollNumber])
+  @@map("students")
+}
+
+model Course {
+  id            String         @id @default(uuid())
+  title         String
+  description   String
+  category      CourseCategory
+  thumbnail     String?
+  duration      Int            // in hours
+  totalModules  Int            @default(0)
+  totalLessons  Int            @default(0)
+  price         Float?
+  isPublished   Boolean        @default(false)
+  collegeId     String
+  college       College        @relation(fields: [collegeId], references: [id])
+  trainerId     String?
+  trainer       Trainer?       @relation(fields: [trainerId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  modules       Module[]
+  enrollments   Enrollment[]
+  studyMaterials StudyMaterial[]
+  recordedVideos RecordedVideo[]
+  liveClasses   LiveClass[]
+  assignments   Assignment[]
+  mcqTests      MCQTest[]
+  codingAssessments CodingAssessment[]
+  projects      Project[]
+  certificates  Certificate[]
+
+  @@index([category])
+  @@index([collegeId])
+  @@index([trainerId])
+  @@map("courses")
+}
+
+model Module {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  order       Int
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons     Lesson[]
+  studyMaterials StudyMaterial[]
+
+  @@index([courseId])
+  @@map("modules")
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  title       String
+  content     String?
+  videoUrl    String?
+  duration    Int?     // in minutes
+  order       Int
+  isFree      Boolean  @default(false)
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([moduleId])
+  @@map("lessons")
+}
+
+model Enrollment {
+  id              String   @id @default(uuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id])
+  courseId         String
+  course          Course   @relation(fields: [courseId], references: [id])
+  progress        Float    @default(0)
+  completedModules Int     @default(0)
+  completedLessons Int     @default(0)
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  isCompleted     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+model StudyMaterial {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  fileSize    Int?
+  moduleId    String?
+  module      Module?  @relation(fields: [moduleId], references: [id])
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@map("study_materials")
+}
+
+model RecordedVideo {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  videoUrl    String
+  duration    Int?     // in seconds
+  thumbnail   String?
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@map("recorded_videos")
+}
+
+model LiveClass {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  meetLink    String
+  startTime   DateTime
+  endTime     DateTime
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  trainerId   String
+  trainer     Trainer  @relation(fields: [trainerId], references: [id])
+  recordingUrl String?
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attendance  Attendance[]
+
+  @@index([courseId])
+  @@index([trainerId])
+  @@map("live_classes")
+}
+
+model Assignment {
+  id          String           @id @default(uuid())
+  title       String
+  description String
+  dueDate     DateTime
+  maxScore    Int              @default(100)
+  passingScore Int             @default(40)
+  fileUrl     String?
+  courseId    String
+  course      Course           @relation(fields: [courseId], references: [id])
+  trainerId   String
+  trainer     Trainer          @relation(fields: [trainerId], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  submissions AssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([trainerId])
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id             String           @id @default(uuid())
+  studentId      String
+  student        Student          @relation(fields: [studentId], references: [id])
+  assignmentId   String
+  assignment     Assignment       @relation(fields: [assignmentId], references: [id])
+  content        String?
+  fileUrl        String?
+  score          Int?
+  feedback       String?
+  status         SubmissionStatus @default(PENDING)
+  submittedAt    DateTime         @default(now())
+  gradedAt       DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([studentId, assignmentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@map("assignment_submissions")
+}
+
+model MCQTest {
+  id              String       @id @default(uuid())
+  title           String
+  description     String?
+  duration        Int          // in minutes
+  passingScore    Int          @default(40)
+  totalQuestions  Int          @default(0)
+  courseId        String
+  course          Course       @relation(fields: [courseId], references: [id])
+  scheduledAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  questions       MCQQuestion[]
+  attempts        MCQAttempt[]
+
+  @@index([courseId])
+  @@map("mcq_tests")
+}
+
+model MCQQuestion {
+  id        String     @id @default(uuid())
+  text      String
+  marks     Int        @default(1)
+  order     Int
+  testId    String
+  test      MCQTest    @relation(fields: [testId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  options   MCQOption[]
+  answers   MCQAnswer[]
+
+  @@index([testId])
+  @@map("mcq_questions")
+}
+
+model MCQOption {
+  id         String  @id @default(uuid())
+  text       String
+  isCorrect  Boolean @default(false)
+  questionId String
+  question   MCQQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    MCQAnswer[]
+
+  @@index([questionId])
+  @@map("mcq_options")
+}
+
+model MCQAttempt {
+  id         String   @id @default(uuid())
+  score      Int      @default(0)
+  totalMarks Int      @default(0)
+  passed     Boolean  @default(false)
+  startedAt  DateTime @default(now())
+  completedAt DateTime?
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id])
+  testId     String
+  test       MCQTest  @relation(fields: [testId], references: [id])
+  createdAt  DateTime @default(now())
+
+  answers    MCQAnswer[]
+
+  @@unique([studentId, testId])
+  @@index([testId])
+  @@index([studentId])
+  @@map("mcq_attempts")
+}
+
+model MCQAnswer {
+  id         String   @id @default(uuid())
+  attemptId  String
+  attempt    MCQAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId String
+  question   MCQQuestion @relation(fields: [questionId], references: [id])
+  optionId   String?
+  option     MCQOption? @relation(fields: [optionId], references: [id])
+  isCorrect  Boolean  @default(false)
+
+  @@index([attemptId])
+  @@map("mcq_answers")
+}
+
+model CodingAssessment {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  duration      Int      // in minutes
+  language      String
+  problemStatement String
+  testCases     String   // JSON
+  passingScore  Int      @default(50)
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  submissions   CodingSubmission[]
+
+  @@index([courseId])
+  @@map("coding_assessments")
+}
+
+model CodingSubmission {
+  id              String           @id @default(uuid())
+  code            String
+  language        String
+  score           Int?
+  passed          Boolean          @default(false)
+  testResults     String?          // JSON
+  studentId       String
+  student         Student          @relation(fields: [studentId], references: [id])
+  assessmentId    String
+  assessment      CodingAssessment @relation(fields: [assessmentId], references: [id])
+  submittedAt     DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([studentId, assessmentId])
+  @@index([assessmentId])
+  @@index([studentId])
+  @@map("coding_submissions")
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id])
+  liveClassId String?
+  liveClass   LiveClass?       @relation(fields: [liveClassId], references: [id])
+  date        DateTime         @default(now())
+  status      AttendanceStatus @default(PRESENT)
+  markedBy    String
+  remarks     String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([studentId, date])
+  @@index([studentId])
+  @@index([liveClassId])
+  @@index([date])
+  @@map("attendance")
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  type        ProjectType
+  status      ProjectStatus @default(NOT_STARTED)
+  progress    Float         @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  githubUrl   String?
+  demoUrl     String?
+  studentId   String
+  student     Student       @relation(fields: [studentId], references: [id])
+  courseId     String?
+  course      Course?       @relation(fields: [courseId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  milestones  ProjectMilestone[]
+  feedbacks   MentorFeedback[]
+
+  @@index([studentId])
+  @@index([courseId])
+  @@map("projects")
+}
+
+model ProjectMilestone {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  status      ProjectStatus @default(NOT_STARTED)
+  projectId   String
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([projectId])
+  @@map("project_milestones")
+}
+
+model MentorFeedback {
+  id        String   @id @default(uuid())
+  content   String
+  rating    Int?     @default(0)
+  mentorId  String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("mentor_feedback")
+}
+
+model Certificate {
+  id             String            @id @default(uuid())
+  certificateId  String            @unique
+  title          String
+  description    String?
+  issueDate      DateTime          @default(now())
+  expiryDate     DateTime?
+  status         CertificateStatus @default(PENDING)
+  studentId      String
+  student        Student           @relation(fields: [studentId], references: [id])
+  courseId        String
+  course         Course            @relation(fields: [courseId], references: [id])
+  verificationUrl String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([studentId, courseId])
+  @@index([certificateId])
+  @@index([studentId])
+  @@map("certificates")
+}
+
+model Subscription {
+  id             String       @id @default(uuid())
+  plan           String       // BASIC, STANDARD, PREMIUM
+  price          Float
+  startDate      DateTime     @default(now())
+  endDate        DateTime
+  isActive       Boolean      @default(true)
+  paymentId      String?
+  collegeId      String
+  college        College      @relation(fields: [collegeId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([collegeId])
+  @@index([isActive])
+  @@map("subscriptions")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   // EMAIL, IN_APP
+  category  String   // ASSIGNMENT, TEST, CLASS, GENERAL
+  isRead    Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  senderId  String?
+  sender    User?    @relation("NotificationSender", fields: [senderId], references: [id])
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  entity    String
+  entityId  String?
+  details   String?  // JSON
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

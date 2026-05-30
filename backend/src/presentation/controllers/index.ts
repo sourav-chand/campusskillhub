@@ -1,0 +1,14 @@
+export { AuthController } from './AuthController';
+export { CollegeController } from './CollegeController';
+export { CourseController } from './CourseController';
+export { EnrollmentController } from './EnrollmentController';
+export { AttendanceController } from './AttendanceController';
+export { AssignmentController } from './AssignmentController';
+export { AssessmentController } from './AssessmentController';
+export { ProjectController } from './ProjectController';
+export { CertificateController } from './CertificateController';
+export { SubscriptionController } from './SubscriptionController';
+export { NotificationController } from './NotificationController';
+export { AnalyticsController } from './AnalyticsController';
+export { ReportController } from './ReportController';
+export { UserController } from './UserController';
