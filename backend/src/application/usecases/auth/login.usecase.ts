@@ -3,7 +3,7 @@ import { AppError } from '../../../shared/errors/AppError';
 
 export interface IUserRepository {
   findByEmail(email: string): Promise<{
-    id: string; email: string; name: string; role: string;
+    id: string; email: string; firstName: string; lastName: string; role: string;
     password: string; collegeId?: string; isActive: boolean;
     isEmailVerified: boolean;
   } | null>;
@@ -67,7 +67,8 @@ export class LoginUseCase {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
         collegeId: user.collegeId,
       },

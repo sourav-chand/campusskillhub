@@ -53,7 +53,7 @@ export default function DashboardRootLayout({
     <AppShell>
       <DashboardShell
         user={{
-          name: user.name,
+          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || '',
           email: user.email,
           avatar: user.avatar,
           role: user.role,

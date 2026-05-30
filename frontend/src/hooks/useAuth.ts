@@ -29,10 +29,10 @@ export function useAuth() {
   const login = useCallback(
     async (payload: LoginPayload) => {
       const { data } = await api.post('/auth/login', payload);
-      const { token: jwt, user: userData } = data.data;
-      authLib.setToken(jwt);
+      const { tokens, user: userData } = data.data;
+      authLib.setToken(tokens.accessToken);
       authLib.setUser(userData);
-      setToken(jwt);
+      setToken(tokens.accessToken);
       setUser(userData);
       return userData;
     },

@@ -3,7 +3,10 @@ export type UserRole = 'super_admin' | 'admin' | 'instructor' | 'student' | 'men
 
 export interface User {
   _id: string;
-  name: string;
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
   email: string;
   role: UserRole;
   avatar?: string;
