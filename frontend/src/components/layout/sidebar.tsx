@@ -28,6 +28,7 @@ import {
   LogOut,
   GraduationCap,
   BarChart3,
+  UserPlus,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
@@ -96,6 +97,12 @@ const navItems: NavItem[] = [
     title: 'Settings',
     href: '/settings',
     icon: Settings,
+  },
+  {
+    title: 'College Admin',
+    href: '/college-admin',
+    icon: UserPlus,
+    roles: ['super_admin'],
   },
 ];
 
