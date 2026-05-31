@@ -29,6 +29,7 @@ import {
   GraduationCap,
   BarChart3,
   UserPlus,
+  UserCog,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
@@ -102,6 +103,12 @@ const navItems: NavItem[] = [
     title: 'College Admin',
     href: '/college-admin',
     icon: UserPlus,
+    roles: ['super_admin'],
+  },
+  {
+    title: 'Trainer',
+    href: '/trainer',
+    icon: UserCog,
     roles: ['super_admin'],
   },
 ];

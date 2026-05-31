@@ -10,6 +10,17 @@ import { generateRandomPassword } from '@shared/utils/helpers';
 
 const router = Router();
 
+const CreateTrainerSchema = z.object({
+  firstName: z.string().trim().min(1, 'First name is required').max(100),
+  lastName: z.string().trim().min(1, 'Last name is required').max(100),
+  email: z.string().trim().toLowerCase().email('Invalid email'),
+  phone: z.string().regex(/^\+?[\d\s-]{10,15}$/, 'Invalid phone number').optional(),
+  company: z.string().trim().max(200).optional(),
+  specialization: z.string().trim().max(200).optional(),
+  expertise: z.string().trim().max(500).optional(),
+  bio: z.string().trim().max(1000).optional(),
+});
+
 const CreateCollegeAdminSchema = z.object({
   collegeName: z.string().trim().min(2, 'College name must be at least 2 characters').max(200),
   collegeCode: z.string().trim().min(2, 'College code must be at least 2 characters').max(20),
@@ -103,6 +114,66 @@ router.post(
           temporaryPassword,
         },
         message: 'College admin created successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.post(
+  '/trainer',
+  authenticate,
+  authorize('super_admin'),
+  validate({ body: CreateTrainerSchema }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = req.body;
+
+      const existingEmail = await prisma.user.findUnique({ where: { email: data.email } });
+      if (existingEmail) {
+        throw new AppError('Email already registered', 409);
+      }
+
+      const temporaryPassword = generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 12);
+
+      const user = await prisma.user.create({
+        data: {
+          email: data.email,
+          password: hashedPassword,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          role: 'TRAINER',
+          phone: data.phone || null,
+          isVerified: true,
+          isActive: true,
+        },
+      });
+
+      await prisma.trainer.create({
+        data: {
+          userId: user.id,
+          company: data.company || null,
+          specialization: data.specialization || null,
+          expertise: data.expertise ? data.expertise.split(',').map((e: string) => e.trim()) : [],
+          bio: data.bio || null,
+        },
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          trainer: {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          },
+          company: data.company || null,
+          temporaryPassword,
+        },
+        message: 'Trainer created successfully',
       });
     } catch (error) {
       next(error);

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
+import * as XLSX from 'xlsx';
 import { Building2, User, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '@/lib/axios';
 
@@ -67,8 +68,24 @@ export default function CollegeAdminPage() {
       };
 
       const response = await api.post('/admin/college-admin', payload);
-      setResult(response.data.data);
+      const data = response.data.data;
+      setResult(data);
       setSuccess(true);
+
+      const ws = XLSX.utils.json_to_sheet([
+        {
+          Role: 'College Admin',
+          'First Name': data.admin.firstName,
+          'Last Name': data.admin.lastName,
+          Email: data.admin.email,
+          Password: data.temporaryPassword,
+          'College Name': data.college.name,
+          'College Code': data.college.code,
+        },
+      ]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Credentials');
+      XLSX.writeFile(wb, `college-admin-${data.college.code}-credentials.xlsx`);
 
       setCollegeName('');
       setCollegeCode('');

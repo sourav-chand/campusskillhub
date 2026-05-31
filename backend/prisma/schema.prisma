@@ -151,8 +151,9 @@ model Trainer {
   id          String   @id @default(uuid())
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id])
-  collegeId   String
-  college     College  @relation(fields: [collegeId], references: [id])
+  collegeId   String?
+  college     College? @relation(fields: [collegeId], references: [id])
+  company     String?
   specialization String?
   bio         String?
   expertise   String[]
