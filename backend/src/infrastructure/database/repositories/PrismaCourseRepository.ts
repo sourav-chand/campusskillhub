@@ -196,4 +196,121 @@ export class PrismaCourseRepository implements ICourseRepository {
     });
     return courses.map((c) => this.mapToEntity(c));
   }
+
+  async getModules(courseId: string): Promise<any[]> {
+    const modules = await this.prisma.module.findMany({
+      where: { courseId },
+      include: { lessons: { orderBy: { order: 'asc' } } },
+      orderBy: { order: 'asc' },
+    });
+    return modules.map(mod => ({
+      ...mod,
+      _id: mod.id,
+      lessons: mod.lessons.map(({ content, ...lesson }) => ({
+        ...lesson,
+        _id: lesson.id,
+        description: content,
+      })),
+    }));
+  }
+
+  async addModule(courseId: string, data: { title: string; description?: string; order?: number }): Promise<any> {
+    const maxOrder = await this.prisma.module.aggregate({
+      where: { courseId },
+      _max: { order: true },
+    });
+    const module = await this.prisma.module.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        order: data.order ?? (maxOrder._max.order ?? 0) + 1,
+        courseId,
+      },
+      include: { lessons: { orderBy: { order: 'asc' } } },
+    });
+    await this.prisma.course.update({
+      where: { id: courseId },
+      data: { totalModules: { increment: 1 } },
+    });
+    return module;
+  }
+
+  async updateModule(courseId: string, moduleId: string, data: Partial<{ title: string; description: string; order: number }>): Promise<any> {
+    const module = await this.prisma.module.update({
+      where: { id: moduleId },
+      data: {
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.order !== undefined && { order: data.order }),
+      },
+      include: { lessons: { orderBy: { order: 'asc' } } },
+    });
+    return module;
+  }
+
+  async deleteModule(courseId: string, moduleId: string): Promise<boolean> {
+    try {
+      await this.prisma.module.delete({ where: { id: moduleId } });
+      await this.prisma.course.update({
+        where: { id: courseId },
+        data: { totalModules: { decrement: 1 } },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async addLesson(courseId: string, moduleId: string, data: { title: string; description?: string; videoUrl?: string; duration?: number; isFree?: boolean; order?: number }): Promise<any> {
+    const maxOrder = await this.prisma.lesson.aggregate({
+      where: { moduleId },
+      _max: { order: true },
+    });
+    const lesson = await this.prisma.lesson.create({
+      data: {
+        title: data.title,
+        content: data.description,
+        videoUrl: data.videoUrl,
+        duration: data.duration,
+        isFree: data.isFree ?? false,
+        order: data.order ?? (maxOrder._max.order ?? 0) + 1,
+        moduleId,
+      },
+    });
+    await this.prisma.course.update({
+      where: { id: courseId },
+      data: { totalLessons: { increment: 1 } },
+    });
+    const { content, ...lessonRest } = lesson;
+    return { ...lessonRest, _id: lesson.id, description: content };
+  }
+
+  async updateLesson(courseId: string, moduleId: string, lessonId: string, data: Partial<{ title: string; description: string; videoUrl: string; duration: number; isFree: boolean; order: number }>): Promise<any> {
+    const lesson = await this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.description !== undefined && { content: data.description }),
+        ...(data.videoUrl !== undefined && { videoUrl: data.videoUrl }),
+        ...(data.duration !== undefined && { duration: data.duration }),
+        ...(data.isFree !== undefined && { isFree: data.isFree }),
+        ...(data.order !== undefined && { order: data.order }),
+      },
+    });
+    const { content, ...lessonRest } = lesson;
+    return { ...lessonRest, _id: lesson.id, description: content };
+  }
+
+  async deleteLesson(courseId: string, moduleId: string, lessonId: string): Promise<boolean> {
+    try {
+      await this.prisma.lesson.delete({ where: { id: lessonId } });
+      await this.prisma.course.update({
+        where: { id: courseId },
+        data: { totalLessons: { decrement: 1 } },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

@@ -257,8 +257,16 @@ export default function CourseDetailPage() {
                     </details>
                   ))}
                 </div>
+              ) : isTrainer ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title="No curriculum yet"
+                  description="Start building your course by adding modules and lessons"
+                  actionLabel="Add Modules"
+                  onAction={() => window.location.href = `/courses/${courseId}/edit`}
+                />
               ) : (
-                <EmptyState icon={BookOpen} title="No curriculum yet" description="Course modules are being prepared" />
+                <EmptyState icon={BookOpen} title="No curriculum yet" description="Curriculum is being prepared by the instructor" />
               )}
             </CardContent>
           </Card>

@@ -71,6 +71,69 @@ export class CourseController {
     }
   };
 
+  getModules = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const modules = await container.repositories.courseRepository.getModules(req.params.id as string);
+      res.status(200).json({ success: true, data: modules });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addModule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await container.repositories.courseRepository.addModule(req.params.id as string, req.body);
+      res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateModule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await container.repositories.courseRepository.updateModule(req.params.id as string, req.params.moduleId as string, req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteModule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await container.repositories.courseRepository.deleteModule(req.params.id as string, req.params.moduleId as string);
+      res.status(200).json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addLesson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await container.repositories.courseRepository.addLesson(req.params.id as string, req.params.moduleId as string, req.body);
+      res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateLesson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await container.repositories.courseRepository.updateLesson(req.params.id as string, req.params.moduleId as string, req.params.lessonId as string, req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteLesson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await container.repositories.courseRepository.deleteLesson(req.params.id as string, req.params.moduleId as string, req.params.lessonId as string);
+      res.status(200).json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getCategories = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const categories = [

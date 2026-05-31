@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 import { ErrorState } from '@/components/shared/error-state';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { courseService } from '@/services/course.service';
 import { collegeService } from '@/services/college.service';
 import { userService } from '@/services/user.service';
@@ -39,16 +41,14 @@ import {
   Plus,
   X,
   Save,
+  Trash2,
+  Edit,
   BookOpen,
   Layers,
   FileText,
   Video,
-  Monitor,
-  ClipboardList,
-  CheckSquare,
-  Code,
-  FolderKanban,
-  Award,
+  ChevronDown,
+  GripVertical,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -218,6 +218,144 @@ export default function EditCoursePage() {
     form.setValue('prerequisites', prerequisites.filter((p) => p !== item));
   };
 
+  const [modules, setModules] = React.useState<any[]>(course?.modules || []);
+  const [moduleDialogOpen, setModuleDialogOpen] = React.useState(false);
+  const [lessonDialogOpen, setLessonDialogOpen] = React.useState(false);
+  const [editingModule, setEditingModule] = React.useState<any>(null);
+  const [editingLesson, setEditingLesson] = React.useState<any>(null);
+  const [activeModuleId, setActiveModuleId] = React.useState<string | null>(null);
+  const [moduleFormTitle, setModuleFormTitle] = React.useState('');
+  const [moduleFormDesc, setModuleFormDesc] = React.useState('');
+  const [lessonFormTitle, setLessonFormTitle] = React.useState('');
+  const [lessonFormDesc, setLessonFormDesc] = React.useState('');
+  const [lessonFormVideo, setLessonFormVideo] = React.useState('');
+  const [lessonFormDuration, setLessonFormDuration] = React.useState('');
+  const [lessonFormIsFree, setLessonFormIsFree] = React.useState(false);
+  const [savingModule, setSavingModule] = React.useState(false);
+  const [savingLesson, setSavingLesson] = React.useState(false);
+
+  const refreshModules = React.useCallback(async () => {
+    try {
+      const res = await courseService.getModules(courseId);
+      const data = res.data.data;
+      setModules(Array.isArray(data) ? data : []);
+    } catch {
+      // silent
+    }
+  }, [courseId]);
+
+  React.useEffect(() => {
+    if (course?.modules) {
+      setModules(course.modules);
+    }
+  }, [course]);
+
+  const openAddModule = () => {
+    setEditingModule(null);
+    setModuleFormTitle('');
+    setModuleFormDesc('');
+    setModuleDialogOpen(true);
+  };
+
+  const openEditModule = (mod: any) => {
+    setEditingModule(mod);
+    setModuleFormTitle(mod.title || '');
+    setModuleFormDesc(mod.description || '');
+    setModuleDialogOpen(true);
+  };
+
+  const saveModule = async () => {
+    if (!moduleFormTitle.trim()) { toast.error('Module title is required'); return; }
+    try {
+      setSavingModule(true);
+      if (editingModule) {
+        await courseService.updateModule(courseId, editingModule._id, { title: moduleFormTitle.trim(), description: moduleFormDesc.trim() || undefined });
+        toast.success('Module updated');
+      } else {
+        await courseService.addModule(courseId, { title: moduleFormTitle.trim(), description: moduleFormDesc.trim() || undefined });
+        toast.success('Module added');
+      }
+      setModuleDialogOpen(false);
+      await refreshModules();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save module');
+    } finally {
+      setSavingModule(false);
+    }
+  };
+
+  const deleteModule = async (modId: string) => {
+    if (!confirm('Delete this module and all its lessons?')) return;
+    try {
+      await courseService.deleteModule(courseId, modId);
+      toast.success('Module deleted');
+      await refreshModules();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete module');
+    }
+  };
+
+  const openAddLesson = (moduleId: string) => {
+    setActiveModuleId(moduleId);
+    setEditingLesson(null);
+    setLessonFormTitle('');
+    setLessonFormDesc('');
+    setLessonFormVideo('');
+    setLessonFormDuration('');
+    setLessonFormIsFree(false);
+    setLessonDialogOpen(true);
+  };
+
+  const openEditLesson = (moduleId: string, lesson: any) => {
+    setActiveModuleId(moduleId);
+    setEditingLesson(lesson);
+    setLessonFormTitle(lesson.title || '');
+    setLessonFormDesc(lesson.description || '');
+    setLessonFormVideo(lesson.videoUrl || '');
+    setLessonFormDuration(String(lesson.duration ?? ''));
+    setLessonFormIsFree(lesson.isFree || false);
+    setLessonDialogOpen(true);
+  };
+
+  const saveLesson = async () => {
+    if (!lessonFormTitle.trim()) { toast.error('Lesson title is required'); return; }
+    if (!activeModuleId) return;
+    try {
+      setSavingLesson(true);
+      const payload: Record<string, unknown> = {
+        title: lessonFormTitle.trim(),
+        description: lessonFormDesc.trim() || undefined,
+        videoUrl: lessonFormVideo.trim() || undefined,
+        duration: lessonFormDuration ? Number(lessonFormDuration) : undefined,
+        isFree: lessonFormIsFree,
+      };
+      if (editingLesson) {
+        await courseService.updateLesson(courseId, activeModuleId, editingLesson._id, payload);
+        toast.success('Lesson updated');
+      } else {
+        await courseService.addLesson(courseId, activeModuleId, payload);
+        toast.success('Lesson added');
+      }
+      setLessonDialogOpen(false);
+      await refreshModules();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save lesson');
+    } finally {
+      setSavingLesson(false);
+    }
+  };
+
+  const deleteLesson = async (moduleId: string, lessonId: string) => {
+    if (!confirm('Delete this lesson?')) return;
+    try {
+      await courseService.deleteLesson(courseId, moduleId, lessonId);
+      toast.success('Lesson deleted');
+      await refreshModules();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete lesson');
+    }
+  };
+
   const onSubmit = async (values: EditCourseFormValues) => {
     try {
       setSubmitting(true);
@@ -254,9 +392,6 @@ export default function EditCoursePage() {
   if (fetchError) {
     return <ErrorState message={fetchError} onRetry={() => window.location.reload()} />;
   }
-
-  const countModules = course?.modules?.length ?? 0;
-  const totalLessonsCount = course?.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length ?? 0), 0) ?? 0;
 
   return (
     <div className="space-y-6">
@@ -613,6 +748,208 @@ export default function EditCoursePage() {
             </CardContent>
           </Card>
 
+          {/* Curriculum - Module & Lesson Management */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Curriculum</CardTitle>
+                <CardDescription>Organize your course into modules and lessons</CardDescription>
+              </div>
+              <Button type="button" size="sm" onClick={openAddModule}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add Module
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {modules.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+                  <Layers className="mb-4 h-10 w-10 text-muted-foreground/60" />
+                  <h3 className="mb-1 text-sm font-semibold">No modules yet</h3>
+                  <p className="mb-4 max-w-xs text-sm text-muted-foreground">
+                    Start building your curriculum by adding your first module
+                  </p>
+                  <Button type="button" size="sm" onClick={openAddModule}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add Module
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {modules.map((mod, modIdx) => (
+                    <details key={mod._id} className="group rounded-lg border" open={modules.length <= 3}>
+                      <summary className="flex cursor-pointer items-center justify-between p-3 hover:bg-muted/50">
+                        <div className="flex items-center gap-2 text-left min-w-0">
+                          <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                          <span className="font-medium truncate">{mod.title}</span>
+                          <Badge variant="secondary" className="shrink-0 text-xs">
+                            {(mod.lessons?.length || 0)} {(mod.lessons?.length || 0) === 1 ? 'lesson' : 'lessons'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditModule(mod)}>
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteModule(mod._id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                        </div>
+                      </summary>
+                      {mod.description && (
+                        <div className="px-3 pb-2">
+                          <p className="text-xs text-muted-foreground">{mod.description}</p>
+                        </div>
+                      )}
+                      <Separator />
+                      <div className="p-3 space-y-2">
+                        {mod.lessons && mod.lessons.length > 0 ? (
+                          mod.lessons.map((lesson: any) => (
+                            <div key={lesson._id} className="flex items-center justify-between rounded-lg border p-2.5">
+                              <div className="flex items-center gap-3 min-w-0">
+                                {lesson.videoUrl ? (
+                                  <Video className="h-4 w-4 text-primary shrink-0" />
+                                ) : (
+                                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                                )}
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{lesson.title}</p>
+                                  {lesson.description && (
+                                    <p className="text-xs text-muted-foreground truncate">{lesson.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {lesson.duration && (
+                                  <span className="text-xs text-muted-foreground mr-1">{lesson.duration}min</span>
+                                )}
+                                {lesson.isFree && (
+                                  <Badge variant="outline" className="text-[10px] h-5">Free</Badge>
+                                )}
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditLesson(mod._id, lesson)}>
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteLesson(mod._id, lesson._id)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground py-1">No lessons yet</p>
+                        )}
+                        <Button type="button" variant="outline" size="sm" className="mt-1" onClick={() => openAddLesson(mod._id)}>
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Add Lesson
+                        </Button>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Module Dialog */}
+          <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingModule ? 'Edit Module' : 'Add Module'}</DialogTitle>
+                <DialogDescription>
+                  {editingModule ? 'Update the module details' : 'Create a new module for your course'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    placeholder="Module title"
+                    value={moduleFormTitle}
+                    onChange={(e) => setModuleFormTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description (optional)</label>
+                  <Textarea
+                    placeholder="Module description"
+                    value={moduleFormDesc}
+                    onChange={(e) => setModuleFormDesc(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setModuleDialogOpen(false)}>Cancel</Button>
+                <Button type="button" onClick={saveModule} disabled={savingModule}>
+                  {savingModule ? 'Saving...' : editingModule ? 'Update' : 'Add'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Lesson Dialog */}
+          <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingLesson ? 'Edit Lesson' : 'Add Lesson'}</DialogTitle>
+                <DialogDescription>
+                  {editingLesson ? 'Update the lesson details' : 'Add a new lesson to this module'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    placeholder="Lesson title"
+                    value={lessonFormTitle}
+                    onChange={(e) => setLessonFormTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description (optional)</label>
+                  <Textarea
+                    placeholder="Lesson description"
+                    value={lessonFormDesc}
+                    onChange={(e) => setLessonFormDesc(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Video URL (optional)</label>
+                    <Input
+                      placeholder="https://example.com/video.mp4"
+                      value={lessonFormVideo}
+                      onChange={(e) => setLessonFormVideo(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Duration (minutes)</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="e.g. 15"
+                      value={lessonFormDuration}
+                      onChange={(e) => setLessonFormDuration(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="lesson-is-free"
+                    checked={lessonFormIsFree}
+                    onCheckedChange={setLessonFormIsFree}
+                  />
+                  <label htmlFor="lesson-is-free" className="text-sm">Free lesson (no enrollment required)</label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setLessonDialogOpen(false)}>Cancel</Button>
+                <Button type="button" onClick={saveLesson} disabled={savingLesson}>
+                  {savingLesson ? 'Saving...' : editingLesson ? 'Update' : 'Add'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Submit */}
           <div className="flex justify-end gap-3">
