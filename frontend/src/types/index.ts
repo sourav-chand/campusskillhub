@@ -51,6 +51,8 @@ export interface Course {
   price: number;
   syllabus?: string;
   isPublished: boolean;
+  totalModules: number;
+  totalLessons: number;
   enrolledCount: number;
   rating: number;
   modules: Module[];

@@ -36,7 +36,7 @@ export const UpdateCourseSchema = z.object({
   title: z.string().min(3).max(200).optional(),
   description: z.string().min(10).max(5000).optional(),
   shortDescription: z.string().max(300).optional(),
-  category: z.string().min(2).max(100).optional(),
+  category: z.string().min(2).max(100).transform(val => val.toUpperCase()).optional(),
   subcategory: z.string().max(100).optional(),
   level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
   duration: z.number().int().positive().optional(),
@@ -47,4 +47,6 @@ export const UpdateCourseSchema = z.object({
   tags: z.array(z.string()).optional(),
   price: z.number().min(0).optional(),
   isPublished: z.boolean().optional(),
+  totalModules: z.number().int().min(0).optional(),
+  totalLessons: z.number().int().min(0).optional(),
 });

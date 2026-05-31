@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Form,
@@ -33,7 +34,22 @@ import { ErrorState } from '@/components/shared/error-state';
 import { courseService } from '@/services/course.service';
 import { collegeService } from '@/services/college.service';
 import { userService } from '@/services/user.service';
-import { ChevronLeft, Plus, X, Save } from 'lucide-react';
+import {
+  ChevronLeft,
+  Plus,
+  X,
+  Save,
+  BookOpen,
+  Layers,
+  FileText,
+  Video,
+  Monitor,
+  ClipboardList,
+  CheckSquare,
+  Code,
+  FolderKanban,
+  Award,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const editCourseSchema = z.object({
@@ -50,6 +66,9 @@ const editCourseSchema = z.object({
   tags: z.array(z.string()).optional(),
   prerequisites: z.array(z.string()).optional(),
   learningObjectives: z.array(z.string()).optional(),
+  totalModules: z.coerce.number().int().min(0).default(0),
+  totalLessons: z.coerce.number().int().min(0).default(0),
+  isPublished: z.boolean().default(false),
 });
 
 type EditCourseFormValues = z.infer<typeof editCourseSchema>;
@@ -79,6 +98,7 @@ export default function EditCoursePage() {
   const [trainers, setTrainers] = React.useState<any[]>([]);
   const [loadingData, setLoadingData] = React.useState(true);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
+  const [course, setCourse] = React.useState<any>(null);
 
   const userRole = (user?.role || '').toLowerCase();
   const isSuperAdmin = userRole === 'super_admin';
@@ -101,6 +121,9 @@ export default function EditCoursePage() {
       tags: [],
       prerequisites: [],
       learningObjectives: [],
+      totalModules: 0,
+      totalLessons: 0,
+      isPublished: false,
     },
   });
 
@@ -132,25 +155,29 @@ export default function EditCoursePage() {
         }
 
         if (courseRes.status === 'fulfilled') {
-          const course = courseRes.value.data.data;
-          const instructorId = typeof course.instructor === 'string'
-            ? course.instructor
-            : course.instructor?._id || (course.instructor as any)?.id || '';
+          const c = courseRes.value.data.data;
+          setCourse(c);
+          const instructorId = typeof c.instructor === 'string'
+            ? c.instructor
+            : c.instructor?._id || (c.instructor as any)?.id || '';
 
           form.reset({
-            title: course.title || '',
-            shortDescription: course.shortDescription || '',
-            description: course.description || '',
-            category: course.category || '',
-            level: course.level || 'beginner',
-            duration: course.duration || 0,
-            price: course.price ?? 0,
-            thumbnail: course.thumbnail || '',
-            collegeId: (course as any).collegeId || course.college || '',
+            title: c.title || '',
+            shortDescription: c.shortDescription || '',
+            description: c.description || '',
+            category: c.category || '',
+            level: c.level || 'beginner',
+            duration: c.duration || 0,
+            price: c.price ?? 0,
+            thumbnail: c.thumbnail || '',
+            collegeId: (c as any).collegeId || c.college || '',
             trainerId: instructorId,
-            tags: (course as any).tags || [],
-            prerequisites: (course as any).prerequisites || [],
-            learningObjectives: (course as any).learningObjectives || [],
+            tags: (c as any).tags || [],
+            prerequisites: (c as any).prerequisites || [],
+            learningObjectives: (c as any).learningObjectives || [],
+            totalModules: c.totalModules ?? (c.modules?.length ?? 0),
+            totalLessons: c.totalLessons ?? 0,
+            isPublished: c.isPublished ?? false,
           });
         } else {
           setFetchError('Failed to load course');
@@ -203,6 +230,8 @@ export default function EditCoursePage() {
         tags: values.tags?.length ? values.tags : undefined,
         prerequisites: values.prerequisites?.length ? values.prerequisites : undefined,
         learningObjectives: values.learningObjectives?.length ? values.learningObjectives : undefined,
+        totalModules: Number(values.totalModules) || 0,
+        totalLessons: Number(values.totalLessons) || 0,
       };
       await courseService.update(courseId, payload as Record<string, unknown>);
       toast.success('Course updated successfully');
@@ -225,6 +254,9 @@ export default function EditCoursePage() {
   if (fetchError) {
     return <ErrorState message={fetchError} onRetry={() => window.location.reload()} />;
   }
+
+  const countModules = course?.modules?.length ?? 0;
+  const totalLessonsCount = course?.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length ?? 0), 0) ?? 0;
 
   return (
     <div className="space-y-6">
@@ -389,7 +421,7 @@ export default function EditCoursePage() {
             </CardContent>
           </Card>
 
-          {/* Tags */}
+          {/* Tags, Prerequisites, Learning Objectives */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Tags & Prerequisites</CardTitle>
@@ -445,6 +477,64 @@ export default function EditCoursePage() {
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Structure & Publishing */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Structure & Publishing</CardTitle>
+              <CardDescription>Course structure counts and publish status</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="totalModules"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total Modules</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={0} placeholder="e.g. 8" {...field} />
+                      </FormControl>
+                      <FormDescription>Number of modules in this course</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="totalLessons"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total Lessons</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={0} placeholder="e.g. 40" {...field} />
+                      </FormControl>
+                      <FormDescription>Number of lessons across all modules</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="isPublished"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Published</FormLabel>
+                      <FormDescription>
+                        {field.value ? 'Course is visible to students' : 'Course is hidden as draft'}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
@@ -522,6 +612,7 @@ export default function EditCoursePage() {
               </div>
             </CardContent>
           </Card>
+
 
           {/* Submit */}
           <div className="flex justify-end gap-3">
