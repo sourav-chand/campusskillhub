@@ -71,7 +71,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         authLib.setUser(data.data);
       } catch {
         authLib.removeToken();
-        authLib.removeToken();
         setToken(null);
         setUser(null);
       } finally {
@@ -89,7 +88,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [isLoading, token, isPublicRoute, router]);
 
   const logout = React.useCallback(() => {
-    authLib.removeToken();
     authLib.removeToken();
     setToken(null);
     setUser(null);

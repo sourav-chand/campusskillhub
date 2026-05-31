@@ -8,7 +8,7 @@ export const authorize = (...allowedRoles: string[]) => {
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!allowedRoles.map(r => r.toUpperCase()).includes(req.user.role.toUpperCase())) {
       next(new AppError('Forbidden: insufficient permissions', 403));
       return;
     }
