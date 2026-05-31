@@ -8,15 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -28,40 +20,19 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
-const baseSchema = {
-  firstName: z.string().min(1, 'First name is required').max(50),
-  lastName: z.string().min(1, 'Last name is required').max(50),
-  email: z.string().min(1, 'Email is required').email('Invalid email address'),
-  phone: z.string().min(10, 'Phone must be at least 10 digits').regex(/^\+?[\d\s()-]+$/, 'Invalid phone number'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain an uppercase letter')
-    .regex(/[a-z]/, 'Password must contain a lowercase letter')
-    .regex(/[0-9]/, 'Password must contain a number'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-};
-
-const adminSchema = z
+const registerSchema = z
   .object({
-    ...baseSchema,
-    role: z.literal('admin'),
-    collegeName: z.string().min(1, 'College name is required'),
-    collegeCode: z.string().min(1, 'College code is required'),
-    collegeAddress: z.string().min(1, 'College address is required'),
-    collegeCity: z.string().min(1, 'City is required'),
-    collegeState: z.string().min(1, 'State is required'),
-    collegePincode: z.string().min(1, 'Pincode is required'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
-
-const studentSchema = z
-  .object({
-    ...baseSchema,
-    role: z.literal('student'),
+    firstName: z.string().min(1, 'First name is required').max(50),
+    lastName: z.string().min(1, 'Last name is required').max(50),
+    email: z.string().min(1, 'Email is required').email('Invalid email address'),
+    phone: z.string().min(10, 'Phone must be at least 10 digits').regex(/^\+?[\d\s()-]+$/, 'Invalid phone number'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain an uppercase letter')
+      .regex(/[a-z]/, 'Password must contain a lowercase letter')
+      .regex(/[0-9]/, 'Password must contain a number'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
     collegeCode: z.string().min(1, 'College code is required'),
     rollNumber: z.string().min(1, 'Roll number is required'),
   })
@@ -70,23 +41,19 @@ const studentSchema = z
     path: ['confirmPassword'],
   });
 
-type Role = 'admin' | 'student';
+type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
-  const [role, setRole] = useState<Role>('admin');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const schema = role === 'admin' ? adminSchema : studentSchema;
-  type RegisterForm = z.infer<typeof schema>;
-
   const form = useForm<RegisterForm>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -94,51 +61,10 @@ export default function RegisterPage() {
       phone: '',
       password: '',
       confirmPassword: '',
-      ...(role === 'admin'
-        ? {
-            role: 'admin' as const,
-            collegeName: '',
-            collegeCode: '',
-            collegeAddress: '',
-            collegeCity: '',
-            collegeState: '',
-            collegePincode: '',
-          }
-        : {
-            role: 'student' as const,
-            collegeCode: '',
-            rollNumber: '',
-          }),
+      collegeCode: '',
+      rollNumber: '',
     },
   });
-
-  function switchRole(newRole: Role) {
-    setRole(newRole);
-    setError('');
-    form.reset({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      ...(newRole === 'admin'
-        ? {
-            role: 'admin' as const,
-            collegeName: '',
-            collegeCode: '',
-            collegeAddress: '',
-            collegeCity: '',
-            collegeState: '',
-            collegePincode: '',
-          }
-        : {
-            role: 'student' as const,
-            collegeCode: '',
-            rollNumber: '',
-          }),
-    });
-  }
 
   async function onSubmit(values: RegisterForm) {
     setError('');
@@ -150,15 +76,12 @@ export default function RegisterPage() {
         lastName: values.lastName,
         email: values.email,
         password: values.password,
-        role: values.role,
+        role: 'student',
         phone: values.phone || undefined,
-        collegeCode: values.collegeCode || undefined,
+        collegeCode: values.collegeCode,
+        rollNumber: values.rollNumber,
       });
-      setSuccess(
-        role === 'admin'
-          ? 'Registration successful! Please check your email to verify your account before logging in.'
-          : 'Registration successful! Please check your email to verify your account.',
-      );
+      setSuccess('Registration successful! Please check your email to verify your account.');
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
@@ -172,7 +95,7 @@ export default function RegisterPage() {
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Choose your role and fill in the details below
+          Fill in the details below to register as a student
         </p>
       </div>
 
@@ -192,31 +115,6 @@ export default function RegisterPage() {
 
       {!success && (
         <>
-          <div className="mb-6 flex rounded-lg border p-1">
-            <button
-              type="button"
-              onClick={() => switchRole('admin')}
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                role === 'admin'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              College Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => switchRole('student')}
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                role === 'student'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Student
-            </button>
-          </div>
-
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -276,121 +174,33 @@ export default function RegisterPage() {
                 )}
               />
 
-              {role === 'admin' && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="collegeName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>College Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter college name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="collegeCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>College Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. UNIV001" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="collegeAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>College Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter college address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <FormField
-                      control={form.control}
-                      name="collegeCity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City</FormLabel>
-                          <FormControl>
-                            <Input placeholder="City" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="collegeState"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State</FormLabel>
-                          <FormControl>
-                            <Input placeholder="State" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="collegePincode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pincode</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Pincode" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </>
-              )}
+              <FormField
+                control={form.control}
+                name="collegeCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>College Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your college code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {role === 'student' && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="collegeCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>College Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your college code" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="rollNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Roll Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your roll number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
+              <FormField
+                control={form.control}
+                name="rollNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Roll Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your roll number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
