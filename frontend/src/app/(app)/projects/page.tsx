@@ -69,8 +69,8 @@ export default function ProjectsPage() {
       if (searchQuery) params.search = searchQuery;
 
       const res = await projectService.getAll(params);
-      setProjects(res.data.data);
-      setTotalItems(res.data.pagination.total);
+      setProjects(res.data.data || []);
+      setTotalItems(res.data.pagination?.total || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects');
     } finally {

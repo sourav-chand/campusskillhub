@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useAtom } from 'jotai';
 import { usePathname, useRouter } from 'next/navigation';
-import { userAtom, tokenAtom } from '@/store/auth';
+import { userAtom, tokenAtom, normalizeUser } from '@/store/auth';
 import * as authLib from '@/lib/auth';
 import api from '@/lib/axios';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
@@ -67,8 +67,9 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         const { data } = await api.get<{ success: boolean; data: User }>(
           '/auth/me',
         );
-        setUser(data.data);
-        authLib.setUser(data.data);
+        const normalized = normalizeUser(data.data);
+        setUser(normalized);
+        authLib.setUser(normalized);
       } catch {
         authLib.removeToken();
         setToken(null);

@@ -115,18 +115,18 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const pathname = usePathname();
 
     const roleMap: Record<string, string> = {
-      SUPER_ADMIN: 'super_admin',
-      COLLEGE_ADMIN: 'admin',
-      TRAINER: 'instructor',
-      STUDENT: 'student',
+      super_admin: 'super_admin',
+      college_admin: 'admin',
+      trainer: 'instructor',
+      student: 'student',
     };
 
-    const normalizedRole = roleMap[user?.role ?? ''] ?? user?.role ?? '';
+    const normalizedRole = roleMap[user?.role?.toLowerCase() ?? ''] ?? '';
 
     const filteredNavItems = navItems.filter((item) => {
       if (!item.roles) return true;
       if (!normalizedRole) return true;
-      return item.roles.includes(normalizedRole);
+      return item.roles.includes(normalizedRole as UserRole);
     });
 
     const getInitials = (name: string) => {

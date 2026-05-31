@@ -51,8 +51,8 @@ export default function NotificationsPage() {
       if (activeTab === 'unread') params.isRead = false;
 
       const res = await notificationService.getAll(params);
-      setNotifications(res.data.data);
-      setTotalItems(res.data.pagination.total);
+      setNotifications(res.data.data ?? []);
+      setTotalItems((res.data as any).meta?.total ?? res.data.pagination?.total ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load notifications');
     } finally {

@@ -47,6 +47,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login({ email: values.email, password: values.password });
+      if (!user) {
+        setError('Login failed - no user returned');
+        return;
+      }
       if (user.role === 'admin' || user.role === 'super_admin') {
         router.push('/dashboard');
       } else if (user.role === 'student') {

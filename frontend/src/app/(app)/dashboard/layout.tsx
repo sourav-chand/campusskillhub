@@ -5,13 +5,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
 const roleRedirectMap: Record<string, string> = {
-  SUPER_ADMIN: '/dashboard/super-admin',
   super_admin: '/dashboard/super-admin',
-  COLLEGE_ADMIN: '/dashboard/college-admin',
-  admin: '/dashboard/college-admin',
-  TRAINER: '/dashboard/trainer',
-  instructor: '/dashboard/trainer',
-  STUDENT: '/dashboard/student',
+  college_admin: '/dashboard/college-admin',
+  trainer: '/dashboard/trainer',
   student: '/dashboard/student',
 };
 

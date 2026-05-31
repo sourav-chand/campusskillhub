@@ -276,11 +276,11 @@ export default function TrainerDashboard() {
                     <TableCell>
                       <Badge variant="outline">{course.category}</Badge>
                     </TableCell>
-                    <TableCell>{course.enrolledCount}</TableCell>
+                    <TableCell>{(course as any).enrollmentCount ?? course.enrolledCount ?? 0}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                        <span>{course.rating.toFixed(1)}</span>
+                        <span>{((course as any).averageRating ?? course.rating ?? 0).toFixed(1)}</span>
                       </div>
                     </TableCell>
                     <TableCell>

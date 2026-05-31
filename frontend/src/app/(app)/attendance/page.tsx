@@ -67,8 +67,8 @@ export default function AttendancePage() {
       if (courseFilter !== 'all') params.course = courseFilter;
 
       const res = await attendanceService.getAll(params);
-      setAttendance(res.data.data);
-      setTotalItems(res.data.pagination.total);
+      setAttendance(res.data.data ?? []);
+      setTotalItems((res.data as any).meta?.total ?? res.data.pagination?.total ?? 0);
 
       const statsRes = await attendanceService.getStats('all');
       setStats(statsRes.data.data);

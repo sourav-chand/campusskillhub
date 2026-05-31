@@ -72,8 +72,8 @@ export default function CoursesPage() {
       if (selectedCategory !== 'All') params.category = selectedCategory;
 
       const res = await courseService.getAll(params);
-      setCourses(res.data.data);
-      setTotalItems(res.data.pagination.total);
+      setCourses(res.data.data ?? []);
+      setTotalItems((res.data as any).meta?.total ?? res.data.pagination?.total ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load courses');
     } finally {
@@ -173,8 +173,10 @@ export default function CoursesPage() {
         />
       ) : viewMode === 'grid' ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {courses.map((course) => (
-            <Link key={course._id} href={`/courses/${course._id}`}>
+          {courses.map((course) => {
+            const courseId = (course as any).id || course._id;
+            return (
+            <Link key={courseId} href={`/courses/${courseId}`}>
               <Card className="group h-full transition-colors hover:bg-muted/50">
                 <div className="aspect-video w-full rounded-t-lg bg-muted flex items-center justify-center overflow-hidden">
                   {course.thumbnail ? (
@@ -194,11 +196,11 @@ export default function CoursesPage() {
                     {isTrainer && (
                       <div className="flex gap-1 shrink-0" onClick={(e) => e.preventDefault()}>
                         <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                          <Link href={`/courses/${course._id}/edit`}>
+                          <Link href={`/courses/${courseId}/edit`}>
                             <Edit3 className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(course._id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(courseId)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -210,15 +212,15 @@ export default function CoursesPage() {
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Users className="h-3.5 w-3.5" />
-                      {course.enrolledCount}
+                      {(course as any).enrollmentCount ?? course.enrolledCount ?? 0}
                     </span>
                     <span className="flex items-center gap-1">
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      {course.rating.toFixed(1)}
+                      {((course as any).averageRating ?? course.rating ?? 0).toFixed(1)}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" />
-                      {course.duration}h
+                      {(course as any).totalDuration ?? course.duration ?? 0}h
                     </span>
                   </div>
                   {isStudent && (
@@ -233,12 +235,16 @@ export default function CoursesPage() {
                 </CardContent>
               </Card>
             </Link>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="space-y-2">
-          {courses.map((course) => (
-            <Link key={course._id} href={`/courses/${course._id}`}>
+          {courses.map((course) => {
+            const courseId = (course as any).id || course._id;
+            const instructorName = (course as any).trainerName || (typeof (course as any).instructor === 'string' ? (course as any).instructor : (course as any).instructor?.name) || 'Instructor';
+            return (
+            <Link key={courseId} href={`/courses/${courseId}`}>
               <div className="group flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted">
                   <BookOpen className="h-6 w-6 text-muted-foreground/60" />
@@ -254,10 +260,10 @@ export default function CoursesPage() {
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <GraduationCap className="h-3.5 w-3.5" />
-                      {typeof course.instructor === 'string' ? course.instructor : course.instructor?.name || 'Instructor'}
+                      {instructorName}
                     </span>
                     <span>{course.modules?.length || 0} modules</span>
-                    <span>{course.enrolledCount} students</span>
+                    <span>{(course as any).enrollmentCount ?? course.enrolledCount ?? 0} students</span>
                   </div>
                 </div>
                 <div className="hidden items-center gap-2 sm:flex">
@@ -276,7 +282,8 @@ export default function CoursesPage() {
                 </div>
               </div>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 

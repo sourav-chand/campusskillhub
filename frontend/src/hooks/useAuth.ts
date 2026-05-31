@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useAtom } from 'jotai';
-import { userAtom, tokenAtom } from '@/store/auth';
+import { userAtom, tokenAtom, normalizeUser } from '@/store/auth';
 import * as authLib from '@/lib/auth';
 import api from '@/lib/axios';
 import type { User } from '@/types';
@@ -30,11 +30,12 @@ export function useAuth() {
     async (payload: LoginPayload) => {
       const { data } = await api.post('/auth/login', payload);
       const { tokens, user: userData } = data.data;
+      const normalized = normalizeUser(userData);
       authLib.setToken(tokens.accessToken);
-      authLib.setUser(userData);
+      authLib.setUser(normalized);
       setToken(tokens.accessToken);
-      setUser(userData);
-      return userData;
+      setUser(normalized);
+      return normalized;
     },
     [setToken, setUser],
   );
@@ -55,9 +56,10 @@ export function useAuth() {
 
   const getMe = useCallback(async () => {
     const { data } = await api.get<{ success: boolean; data: User }>('/auth/me');
-    setUser(data.data);
-    authLib.setUser(data.data);
-    return data.data;
+    const normalized = normalizeUser(data.data);
+    setUser(normalized);
+    authLib.setUser(normalized);
+    return normalized;
   }, [setUser]);
 
   const isAuthenticated = !!token;

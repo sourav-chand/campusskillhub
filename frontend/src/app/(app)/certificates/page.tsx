@@ -56,8 +56,8 @@ export default function CertificatesPage() {
       const res = isStudent
         ? await certificateService.getMyCertificates({ page, limit: pageSize })
         : await certificateService.getAll({ page, limit: pageSize });
-      setCertificates(res.data.data);
-      setTotalItems(res.data.pagination.total);
+      setCertificates(res.data.data ?? []);
+      setTotalItems((res.data as any).meta?.total ?? res.data.pagination?.total ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load certificates');
     } finally {

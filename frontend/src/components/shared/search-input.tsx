@@ -33,12 +33,14 @@ const SearchInput = ({
 
   const isControlled = externalValue !== undefined;
   const displayValue = isControlled ? externalValue : internalValue;
+  const onSearchRef = React.useRef(onSearch);
+  onSearchRef.current = onSearch;
 
   React.useEffect(() => {
     if (debouncedValue !== undefined) {
-      onSearch?.(debouncedValue);
+      onSearchRef.current?.(debouncedValue);
     }
-  }, [debouncedValue, onSearch]);
+  }, [debouncedValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

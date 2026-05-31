@@ -84,7 +84,7 @@ export default function CourseDetailPage() {
     return <EmptyState icon={BookOpen} title="Course not found" description="The course you're looking for doesn't exist" />;
   }
 
-  const instructorName = typeof course.instructor === 'string' ? course.instructor : course.instructor?.name || 'Unknown';
+  const instructorName = (course as any).trainerName || (typeof (course as any).instructor === 'string' ? (course as any).instructor : (course as any).instructor?.name) || 'Unknown';
 
   return (
     <div className="space-y-6">
@@ -126,11 +126,11 @@ export default function CourseDetailPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <Users className="h-4 w-4 text-muted-foreground" />
-              {course.enrolledCount} students
+              {(course as any).enrollmentCount ?? course.enrolledCount ?? 0} students
             </span>
             <span className="flex items-center gap-1.5">
               <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              {course.rating.toFixed(1)} rating
+              {((course as any).averageRating ?? course.rating ?? 0).toFixed(1)} rating
             </span>
           </div>
           {isStudent && (
@@ -194,8 +194,8 @@ export default function CourseDetailPage() {
                 </div>
                 <div className="space-y-1 rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Students</p>
-                  <p className="font-semibold">{course.enrolledCount}</p>
-                </div>
+<p className="font-semibold">{(course as any).enrollmentCount ?? course.enrolledCount ?? 0}</p>
+              </div>
               </div>
             </CardContent>
           </Card>
@@ -379,7 +379,7 @@ export default function CourseDetailPage() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-base">Enrolled Students</CardTitle>
-                  <CardDescription>{course.enrolledCount} students enrolled</CardDescription>
+                  <CardDescription>{(course as any).enrollmentCount ?? course.enrolledCount ?? 0} students enrolled</CardDescription>
                 </div>
               </CardHeader>
               <CardContent>
