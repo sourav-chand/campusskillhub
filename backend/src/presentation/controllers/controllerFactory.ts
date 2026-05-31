@@ -41,6 +41,8 @@ import { SubmitMCQUseCase } from '@application/usecases/assessment/submit-mcq.us
 import { SubmitCodingUseCase } from '@application/usecases/assessment/submit-coding.usecase';
 import { GetResultsUseCase } from '@application/usecases/assessment/get-results.usecase';
 import { GetLeaderboardUseCase } from '@application/usecases/assessment/get-leaderboard.usecase';
+import { ListMCQTestsUseCase } from '@application/usecases/assessment/list-mcq.usecase';
+import { ListCodingAssessmentsUseCase } from '@application/usecases/assessment/list-coding.usecase';
 
 import { CreateProjectUseCase } from '@application/usecases/project/create-project.usecase';
 import { UpdateProjectUseCase } from '@application/usecases/project/update-project.usecase';
@@ -162,6 +164,8 @@ export const assessmentController = new AssessmentController(
   new SubmitCodingUseCase(repositories.codingSubmissionRepository as never, { execute: async () => ({ testCaseResults: [], totalExecutionTime: 0 }) }),
   new GetResultsUseCase(repositories.mcqAttemptRepository as never),
   new GetLeaderboardUseCase(repositories.mcqAttemptRepository as never),
+  new ListMCQTestsUseCase(repositories.mcqTestRepository as never),
+  new ListCodingAssessmentsUseCase(repositories.codingAssessmentRepository as never),
 );
 
 export const projectController = new ProjectController(

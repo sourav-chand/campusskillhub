@@ -5,6 +5,8 @@ import { SubmitMCQUseCase } from '@application/usecases/assessment/submit-mcq.us
 import { SubmitCodingUseCase } from '@application/usecases/assessment/submit-coding.usecase';
 import { GetResultsUseCase } from '@application/usecases/assessment/get-results.usecase';
 import { GetLeaderboardUseCase } from '@application/usecases/assessment/get-leaderboard.usecase';
+import { ListMCQTestsUseCase } from '@application/usecases/assessment/list-mcq.usecase';
+import { ListCodingAssessmentsUseCase } from '@application/usecases/assessment/list-coding.usecase';
 
 export class AssessmentController {
   constructor(
@@ -14,6 +16,8 @@ export class AssessmentController {
     private submitCodingUseCase: SubmitCodingUseCase,
     private getResultsUseCase: GetResultsUseCase,
     private getLeaderboardUseCase: GetLeaderboardUseCase,
+    private listMCQTestsUseCase: ListMCQTestsUseCase,
+    private listCodingAssessmentsUseCase: ListCodingAssessmentsUseCase,
   ) {}
 
   createMCQ = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -85,6 +89,24 @@ export class AssessmentController {
         limit: req.query.limit ? Number(req.query.limit) : 10,
       });
       res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getAllMCQ = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.listMCQTestsUseCase.execute(req.query as never);
+      res.status(200).json({ success: true, data: result.data, pagination: result.meta });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getAllCoding = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.listCodingAssessmentsUseCase.execute(req.query as never);
+      res.status(200).json({ success: true, data: result.data, pagination: result.meta });
     } catch (error) {
       next(error);
     }

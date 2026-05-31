@@ -5,11 +5,13 @@ import { authorize } from '@presentation/middleware/rbac.middleware';
 
 const router = Router();
 
+router.get('/mcq', authenticate, assessmentController.getAllMCQ);
 router.post('/mcq', authenticate, authorize('admin', 'college_admin', 'trainer'), assessmentController.createMCQ);
 router.post('/mcq/submit', authenticate, assessmentController.submitMCQ);
 router.get('/mcq/:testId/results', authenticate, assessmentController.getMCQResults);
 router.get('/mcq/:testId/leaderboard', authenticate, assessmentController.getLeaderboard);
 
+router.get('/coding', authenticate, assessmentController.getAllCoding);
 router.post('/coding', authenticate, authorize('admin', 'college_admin', 'trainer'), assessmentController.createCoding);
 router.post('/coding/submit', authenticate, assessmentController.submitCoding);
 router.get('/coding/:assessmentId/results', authenticate, assessmentController.getCodingResults);
