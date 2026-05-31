@@ -25,4 +25,10 @@ router.post('/:id/modules/:moduleId/lessons', authenticate, authorize('super_adm
 router.put('/:id/modules/:moduleId/lessons/:lessonId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.updateLesson);
 router.delete('/:id/modules/:moduleId/lessons/:lessonId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.deleteLesson);
 
+// Study Material routes
+router.get('/:id/materials', authenticate, courseController.getStudyMaterials);
+router.post('/:id/materials', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.addStudyMaterial);
+router.put('/:id/materials/:materialId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.updateStudyMaterial);
+router.delete('/:id/materials/:materialId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.deleteStudyMaterial);
+
 export default router;

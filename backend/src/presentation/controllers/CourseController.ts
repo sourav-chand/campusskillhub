@@ -134,6 +134,52 @@ export class CourseController {
     }
   };
 
+  getStudyMaterials = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const materials = await container.repositories.courseRepository.getStudyMaterials(req.params.id as string);
+      res.status(200).json({ success: true, data: materials });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addStudyMaterial = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = (req.user as any)?.userId || req.body.uploadedBy;
+      const payload = {
+        title: req.body.title,
+        description: req.body.description,
+        fileUrl: req.body.fileUrl,
+        fileType: req.body.fileType,
+        fileSize: req.body.fileSize,
+        moduleId: req.body.moduleId || null,
+        uploadedBy: userId,
+      };
+      const result = await container.repositories.courseRepository.addStudyMaterial(req.params.id as string, payload);
+      res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateStudyMaterial = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await container.repositories.courseRepository.updateStudyMaterial(req.params.materialId as string, req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteStudyMaterial = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await container.repositories.courseRepository.deleteStudyMaterial(req.params.materialId as string);
+      res.status(200).json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getCategories = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const categories = [

@@ -30,4 +30,8 @@ export interface ICourseRepository {
   addLesson(courseId: string, moduleId: string, data: { title: string; description?: string; videoUrl?: string; duration?: number; isFree?: boolean; order?: number }): Promise<any>;
   updateLesson(courseId: string, moduleId: string, lessonId: string, data: Partial<{ title: string; description: string; videoUrl: string; duration: number; isFree: boolean; order: number }>): Promise<any>;
   deleteLesson(courseId: string, moduleId: string, lessonId: string): Promise<boolean>;
+  getStudyMaterials(courseId: string): Promise<any[]>;
+  addStudyMaterial(courseId: string, data: { title: string; description?: string; fileUrl: string; fileType: string; fileSize?: number; moduleId?: string; uploadedBy: string }): Promise<any>;
+  updateStudyMaterial(id: string, data: Partial<{ title: string; description: string; fileUrl: string; fileType: string; fileSize: number; moduleId: string }>): Promise<any>;
+  deleteStudyMaterial(id: string): Promise<boolean>;
 }

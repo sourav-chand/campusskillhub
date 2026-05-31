@@ -153,12 +153,24 @@ export class PrismaCourseRepository implements ICourseRepository {
           },
           orderBy: { order: 'asc' },
         },
+        studyMaterials: { orderBy: { createdAt: 'desc' } },
         _count: { select: { enrollments: true } },
       },
     });
     if (!course) return null;
     return {
       ...course,
+      _id: course.id,
+      modules: course.modules.map(mod => ({
+        ...mod,
+        _id: mod.id,
+        lessons: mod.lessons.map(({ content, ...lesson }) => ({
+          ...lesson,
+          _id: lesson.id,
+          description: content,
+        })),
+      })),
+      studyMaterials: course.studyMaterials.map(m => ({ ...m, _id: m.id })),
       collegeName: course.college?.name ?? null,
       trainerName: course.trainer ? `${course.trainer.user.firstName} ${course.trainer.user.lastName}` : null,
       enrollmentCount: course._count.enrollments,
@@ -308,6 +320,55 @@ export class PrismaCourseRepository implements ICourseRepository {
         where: { id: courseId },
         data: { totalLessons: { decrement: 1 } },
       });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async getStudyMaterials(courseId: string): Promise<any[]> {
+    const materials = await this.prisma.studyMaterial.findMany({
+      where: { courseId },
+      include: { module: { select: { id: true, title: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return materials.map(m => ({ ...m, _id: m.id }));
+  }
+
+  async addStudyMaterial(courseId: string, data: { title: string; description?: string; fileUrl: string; fileType: string; fileSize?: number; moduleId?: string; uploadedBy: string }): Promise<any> {
+    const material = await this.prisma.studyMaterial.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        fileUrl: data.fileUrl,
+        fileType: data.fileType,
+        fileSize: data.fileSize,
+        moduleId: data.moduleId || null,
+        courseId,
+        uploadedBy: data.uploadedBy,
+      },
+    });
+    return { ...material, _id: material.id };
+  }
+
+  async updateStudyMaterial(id: string, data: Partial<{ title: string; description: string; fileUrl: string; fileType: string; fileSize: number; moduleId: string }>): Promise<any> {
+    const material = await this.prisma.studyMaterial.update({
+      where: { id },
+      data: {
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.fileUrl !== undefined && { fileUrl: data.fileUrl }),
+        ...(data.fileType !== undefined && { fileType: data.fileType }),
+        ...(data.fileSize !== undefined && { fileSize: data.fileSize }),
+        ...(data.moduleId !== undefined && { moduleId: data.moduleId || null }),
+      },
+    });
+    return { ...material, _id: material.id };
+  }
+
+  async deleteStudyMaterial(id: string): Promise<boolean> {
+    try {
+      await this.prisma.studyMaterial.delete({ where: { id } });
       return true;
     } catch {
       return false;

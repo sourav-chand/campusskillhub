@@ -280,9 +280,28 @@ export default function CourseDetailPage() {
               <CardDescription>Downloadable resources</CardDescription>
             </CardHeader>
             <CardContent>
-              {course.modules?.some(m => m.lessons?.some(l => l.resources?.length)) ? (
+              {(course as any).studyMaterials?.length > 0 || course.modules?.some(m => m.lessons?.some(l => l.resources?.length)) ? (
                 <div className="space-y-3">
-                  {course.modules.map((module) =>
+                  {(course as any).studyMaterials?.map((mat: any) => (
+                    <div key={mat._id || mat.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{mat.title}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{mat.fileType}</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={mat.fileUrl} target="_blank" rel="noopener noreferrer" download>
+                          <Download className="mr-2 h-3.5 w-3.5" />
+                          Download
+                        </a>
+                      </Button>
+                    </div>
+                  ))}
+                  {course.modules?.map((module) =>
                     module.lessons?.filter(l => l.resources?.length).map((lesson) =>
                       lesson.resources?.map((resource, idx) => (
                         <div key={`${lesson._id}-${idx}`} className="flex items-center justify-between rounded-lg border p-3">
@@ -306,6 +325,14 @@ export default function CourseDetailPage() {
                     )
                   )}
                 </div>
+              ) : isTrainer ? (
+                <EmptyState
+                  icon={FileText}
+                  title="No materials yet"
+                  description="Add study materials for this course"
+                  actionLabel="Add Materials"
+                  onAction={() => window.location.href = `/courses/${courseId}/edit`}
+                />
               ) : (
                 <EmptyState icon={FileText} title="No materials yet" description="Study materials will be added soon" />
               )}

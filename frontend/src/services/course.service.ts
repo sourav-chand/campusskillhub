@@ -50,4 +50,16 @@ export const courseService = {
 
   deleteLesson: (courseId: string, moduleId: string, lessonId: string) =>
     api.delete<ApiResponse<Course>>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`),
+
+  getStudyMaterials: (id: string) =>
+    api.get<ApiResponse<any[]>>(`/courses/${id}/materials`),
+
+  addStudyMaterial: (id: string, payload: { title: string; description?: string; fileUrl: string; fileType: string; fileSize?: number; moduleId?: string }) =>
+    api.post<ApiResponse<any>>(`/courses/${id}/materials`, payload),
+
+  updateStudyMaterial: (courseId: string, materialId: string, payload: Record<string, unknown>) =>
+    api.put<ApiResponse<any>>(`/courses/${courseId}/materials/${materialId}`, payload),
+
+  deleteStudyMaterial: (courseId: string, materialId: string) =>
+    api.delete<ApiResponse<null>>(`/courses/${courseId}/materials/${materialId}`),
 };

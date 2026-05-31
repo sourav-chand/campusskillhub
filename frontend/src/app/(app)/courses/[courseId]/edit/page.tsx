@@ -49,6 +49,7 @@ import {
   Video,
   ChevronDown,
   GripVertical,
+  Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -234,11 +235,31 @@ export default function EditCoursePage() {
   const [savingModule, setSavingModule] = React.useState(false);
   const [savingLesson, setSavingLesson] = React.useState(false);
 
+  const [materials, setMaterials] = React.useState<any[]>([]);
+  const [materialDialogOpen, setMaterialDialogOpen] = React.useState(false);
+  const [editingMaterial, setEditingMaterial] = React.useState<any>(null);
+  const [materialFormTitle, setMaterialFormTitle] = React.useState('');
+  const [materialFormDesc, setMaterialFormDesc] = React.useState('');
+  const [materialFormUrl, setMaterialFormUrl] = React.useState('');
+  const [materialFormType, setMaterialFormType] = React.useState('pdf');
+  const [materialFormModuleId, setMaterialFormModuleId] = React.useState('');
+  const [savingMaterial, setSavingMaterial] = React.useState(false);
+
+  const normalizeModules = (data: any[]) =>
+    data.map((mod: any) => ({
+      ...mod,
+      _id: mod._id || mod.id,
+      lessons: (mod.lessons || []).map((lesson: any) => ({
+        ...lesson,
+        _id: lesson._id || lesson.id,
+      })),
+    }));
+
   const refreshModules = React.useCallback(async () => {
     try {
       const res = await courseService.getModules(courseId);
       const data = res.data.data;
-      setModules(Array.isArray(data) ? data : []);
+      setModules(Array.isArray(data) ? normalizeModules(data) : []);
     } catch {
       // silent
     }
@@ -246,7 +267,7 @@ export default function EditCoursePage() {
 
   React.useEffect(() => {
     if (course?.modules) {
-      setModules(course.modules);
+      setModules(normalizeModules(course.modules));
     }
   }, [course]);
 
@@ -353,6 +374,79 @@ export default function EditCoursePage() {
       await refreshModules();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete lesson');
+    }
+  };
+
+  const refreshMaterials = React.useCallback(async () => {
+    try {
+      const res = await courseService.getStudyMaterials(courseId);
+      const data = res.data.data;
+      setMaterials(Array.isArray(data) ? data : []);
+    } catch {
+      // silent
+    }
+  }, [courseId]);
+
+  React.useEffect(() => {
+    refreshMaterials();
+  }, [refreshMaterials]);
+
+  const openAddMaterial = () => {
+    setEditingMaterial(null);
+    setMaterialFormTitle('');
+    setMaterialFormDesc('');
+    setMaterialFormUrl('');
+    setMaterialFormType('pdf');
+    setMaterialFormModuleId('');
+    setMaterialDialogOpen(true);
+  };
+
+  const openEditMaterial = (mat: any) => {
+    setEditingMaterial(mat);
+    setMaterialFormTitle(mat.title || '');
+    setMaterialFormDesc(mat.description || '');
+    setMaterialFormUrl(mat.fileUrl || '');
+    setMaterialFormType(mat.fileType || 'pdf');
+    setMaterialFormModuleId(mat.moduleId || '');
+    setMaterialDialogOpen(true);
+  };
+
+  const saveMaterial = async () => {
+    if (!materialFormTitle.trim()) { toast.error('Material title is required'); return; }
+    if (!materialFormUrl.trim()) { toast.error('File URL is required'); return; }
+    try {
+      setSavingMaterial(true);
+      const payload: Record<string, unknown> = {
+        title: materialFormTitle.trim(),
+        description: materialFormDesc.trim() || undefined,
+        fileUrl: materialFormUrl.trim(),
+        fileType: materialFormType,
+        moduleId: materialFormModuleId || undefined,
+      };
+      if (editingMaterial) {
+        await courseService.updateStudyMaterial(courseId, editingMaterial._id, payload);
+        toast.success('Material updated');
+      } else {
+        await courseService.addStudyMaterial(courseId, payload as any);
+        toast.success('Material added');
+      }
+      setMaterialDialogOpen(false);
+      await refreshMaterials();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save material');
+    } finally {
+      setSavingMaterial(false);
+    }
+  };
+
+  const deleteMaterial = async (materialId: string) => {
+    if (!confirm('Delete this material?')) return;
+    try {
+      await courseService.deleteStudyMaterial(courseId, materialId);
+      toast.success('Material deleted');
+      await refreshMaterials();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete material');
     }
   };
 
@@ -849,6 +943,64 @@ export default function EditCoursePage() {
             </CardContent>
           </Card>
 
+          {/* Study Materials */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Study Materials</CardTitle>
+                <CardDescription>Upload and manage course materials</CardDescription>
+              </div>
+              <Button type="button" size="sm" onClick={openAddMaterial}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add Material
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {materials.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+                  <FileText className="mb-4 h-10 w-10 text-muted-foreground/60" />
+                  <h3 className="mb-1 text-sm font-semibold">No materials yet</h3>
+                  <p className="mb-4 max-w-xs text-sm text-muted-foreground">
+                    Add study materials like PDFs, documents, or links
+                  </p>
+                  <Button type="button" size="sm" onClick={openAddMaterial}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add Material
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {materials.map((mat) => (
+                    <div key={mat._id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{mat.title}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{mat.fileType}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" asChild>
+                          <a href={mat.fileUrl} target="_blank" rel="noopener noreferrer">
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditMaterial(mat)}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteMaterial(mat._id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Module Dialog */}
           <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
             <DialogContent>
@@ -946,6 +1098,84 @@ export default function EditCoursePage() {
                 <Button type="button" variant="outline" onClick={() => setLessonDialogOpen(false)}>Cancel</Button>
                 <Button type="button" onClick={saveLesson} disabled={savingLesson}>
                   {savingLesson ? 'Saving...' : editingLesson ? 'Update' : 'Add'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Material Dialog */}
+          <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingMaterial ? 'Edit Material' : 'Add Material'}</DialogTitle>
+                <DialogDescription>
+                  {editingMaterial ? 'Update the material details' : 'Add a new study material'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    placeholder="Material title"
+                    value={materialFormTitle}
+                    onChange={(e) => setMaterialFormTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description (optional)</label>
+                  <Textarea
+                    placeholder="Material description"
+                    value={materialFormDesc}
+                    onChange={(e) => setMaterialFormDesc(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">File URL</label>
+                  <Input
+                    placeholder="https://example.com/file.pdf"
+                    value={materialFormUrl}
+                    onChange={(e) => setMaterialFormUrl(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">File Type</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={materialFormType}
+                      onChange={(e) => setMaterialFormType(e.target.value)}
+                    >
+                      <option value="pdf">PDF</option>
+                      <option value="video">Video</option>
+                      <option value="link">Link</option>
+                      <option value="file">File</option>
+                      <option value="image">Image</option>
+                      <option value="document">Document</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Module (optional)</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={materialFormModuleId}
+                      onChange={(e) => setMaterialFormModuleId(e.target.value)}
+                    >
+                      <option value="">All modules</option>
+                      {modules.map((mod) => {
+                        const modId = mod._id || mod.id;
+                        return (
+                          <option key={modId} value={modId}>{mod.title}</option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setMaterialDialogOpen(false)}>Cancel</Button>
+                <Button type="button" onClick={saveMaterial} disabled={savingMaterial}>
+                  {savingMaterial ? 'Saving...' : editingMaterial ? 'Update' : 'Add'}
                 </Button>
               </DialogFooter>
             </DialogContent>
