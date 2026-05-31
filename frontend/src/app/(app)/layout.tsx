@@ -7,21 +7,9 @@ import { DashboardLayout as DashboardShell } from '@/components/layout/dashboard
 import { AppShell } from '@/components/layout/app-shell';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 
-const roleRedirectMap: Record<string, string> = {
-  super_admin: '/dashboard/super-admin',
-  admin: '/dashboard/college-admin',
-  instructor: '/dashboard/trainer',
-  student: '/dashboard/student',
-};
-
-export default function DashboardRootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -29,22 +17,23 @@ export default function DashboardRootLayout({
   }, []);
 
   React.useEffect(() => {
-    if (!mounted) return;
-    if (!isAuthenticated) {
+    if (mounted && !isAuthenticated) {
       router.push('/login');
-      return;
     }
+  }, [mounted, isAuthenticated, router]);
 
-    if (user && pathname === '/dashboard') {
-      const redirectPath = roleRedirectMap[user.role] || '/dashboard/student';
-      router.replace(redirectPath);
-    }
-  }, [mounted, isAuthenticated, user, pathname, router]);
-
-  if (!mounted || !user) {
+  if (!mounted) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading dashboard..." />
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
@@ -53,10 +42,10 @@ export default function DashboardRootLayout({
     <AppShell>
       <DashboardShell
         user={{
-          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || '',
-          email: user.email,
-          avatar: user.avatar,
-          role: user.role,
+          name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.name || '',
+          email: user?.email || '',
+          avatar: user?.avatar,
+          role: (user?.role ?? 'student') as never,
         }}
         onLogout={logout}
       >

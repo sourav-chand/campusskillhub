@@ -52,9 +52,11 @@ export default function StudentDashboard() {
         courseService.getAll({ page: 1, limit: 10 }),
       ]);
 
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data);
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value.data?.data ?? null);
+      }
       if (courseRes.status === 'fulfilled') {
-        const courseData = courseRes.value.data.data;
+        const courseData = courseRes.value.data?.data ?? [];
         setCourses(courseData);
         setEnrolledCourses(
           courseData.slice(0, 4).map((c: Course) => ({

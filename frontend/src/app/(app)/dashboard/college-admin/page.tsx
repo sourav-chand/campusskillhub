@@ -70,7 +70,7 @@ export default function CollegeAdminDashboard() {
       if (compRes.status === 'fulfilled') setCompletionData(compRes.value.data.data as unknown as PieChartData[]);
 
       if (coursesRes.status === 'fulfilled') {
-        const courses = coursesRes.value.data.data;
+        const courses = coursesRes.value.data?.data ?? [];
         const deadlines = courses
           .filter((c: Course) => c.isPublished)
           .slice(0, 5)

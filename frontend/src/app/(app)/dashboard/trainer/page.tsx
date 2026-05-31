@@ -75,7 +75,7 @@ export default function TrainerDashboard() {
       if (attRes.status === 'fulfilled') setAttendanceData(attRes.value.data.data as unknown as LineChartData[]);
 
       if (coursesRes.status === 'fulfilled') {
-        const courseData = coursesRes.value.data.data;
+        const courseData = coursesRes.value.data?.data ?? [];
         setCourses(courseData);
         const grading = courseData
           .filter((c: Course) => c.isPublished)
