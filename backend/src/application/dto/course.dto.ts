@@ -26,7 +26,7 @@ export const CreateCourseDtoSchema = z.object({
   prerequisites: z.array(z.string()).optional(),
   learningObjectives: z.array(z.string()).optional(),
   modules: z.array(ModuleSchema).min(1, 'At least one module is required').optional(),
-  collegeId: z.string().uuid(),
+  collegeId: z.string().uuid().optional(),
   trainerId: z.string().uuid(),
   tags: z.array(z.string()).optional(),
   price: z.number().min(0).default(0),

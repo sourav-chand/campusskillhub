@@ -8,6 +8,7 @@ export class PrismaCourseRepository implements ICourseRepository {
   private mapToEntity(data: {
     id: string;
     title: string;
+    slug: string | null;
     description: string;
     category: CourseCategory;
     thumbnail: string | null;
@@ -24,6 +25,7 @@ export class PrismaCourseRepository implements ICourseRepository {
     return new Course(
       data.id,
       data.title,
+      data.slug ?? '',
       data.description,
       data.category as import('@domain/value-objects/enums').CourseCategory,
       data.thumbnail,
@@ -49,6 +51,7 @@ export class PrismaCourseRepository implements ICourseRepository {
       data: {
         id: course.id,
         title: course.title,
+        slug: course.slug,
         description: course.description,
         category: course.category as CourseCategory,
         thumbnail: course.thumbnail,
@@ -73,6 +76,7 @@ export class PrismaCourseRepository implements ICourseRepository {
     if (data.duration !== undefined) updateData.duration = data.duration;
     if (data.totalModules !== undefined) updateData.totalModules = data.totalModules;
     if (data.totalLessons !== undefined) updateData.totalLessons = data.totalLessons;
+    if (data.slug !== undefined) updateData.slug = data.slug;
     if (data.price !== undefined) updateData.price = data.price;
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
     if (data.trainerId !== undefined) updateData.trainerId = data.trainerId;
@@ -93,6 +97,38 @@ export class PrismaCourseRepository implements ICourseRepository {
   async findAll(): Promise<Course[]> {
     const courses = await this.prisma.course.findMany();
     return courses.map((c) => this.mapToEntity(c));
+  }
+
+  async findBySlug(slug: string): Promise<Course | null> {
+    const course = await this.prisma.course.findUnique({ where: { slug } });
+    return course ? this.mapToEntity(course) : null;
+  }
+
+  async findByIdWithDetails(id: string): Promise<Record<string, unknown> | null> {
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      include: {
+        college: { select: { id: true, name: true } },
+        trainer: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
+        modules: {
+          include: {
+            lessons: { orderBy: { order: 'asc' } },
+          },
+          orderBy: { order: 'asc' },
+        },
+        _count: { select: { enrollments: true } },
+      },
+    });
+    if (!course) return null;
+    return {
+      ...course,
+      collegeName: course.college.name,
+      trainerName: course.trainer ? `${course.trainer.user.firstName} ${course.trainer.user.lastName}` : null,
+      enrollmentCount: course._count.enrollments,
+      trainer: undefined,
+      college: undefined,
+      _count: undefined,
+    };
   }
 
   async findByCategory(category: import('@domain/value-objects/enums').CourseCategory): Promise<Course[]> {

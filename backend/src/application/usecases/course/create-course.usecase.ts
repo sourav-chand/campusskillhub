@@ -30,9 +30,11 @@ export class CreateCourseUseCase {
 
     const { collegeId, trainerId } = parsed.data;
 
-    const college = await this.collegeRepository.findById(collegeId);
-    if (!college) {
-      throw new AppError('College not found', 404);
+    if (collegeId) {
+      const college = await this.collegeRepository.findById(collegeId);
+      if (!college) {
+        throw new AppError('College not found', 404);
+      }
     }
 
     const trainer = await this.userRepository.findById(trainerId);

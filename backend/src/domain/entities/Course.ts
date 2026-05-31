@@ -4,6 +4,7 @@ export class Course {
   constructor(
     public readonly id: string,
     public readonly title: string,
+    public readonly slug: string,
     public readonly description: string,
     public readonly category: CourseCategory,
     public readonly thumbnail: string | null,
@@ -20,6 +21,7 @@ export class Course {
 
   static create(props: {
     title: string;
+    slug: string;
     description: string;
     category: CourseCategory;
     thumbnail?: string;
@@ -31,6 +33,7 @@ export class Course {
     return new Course(
       crypto.randomUUID(),
       props.title,
+      props.slug,
       props.description,
       props.category,
       props.thumbnail ?? null,

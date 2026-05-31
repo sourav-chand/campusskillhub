@@ -196,6 +196,7 @@ model Student {
 model Course {
   id            String         @id @default(uuid())
   title         String
+  slug          String?        @unique
   description   String
   category      CourseCategory
   thumbnail     String?
