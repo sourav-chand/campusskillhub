@@ -136,8 +136,10 @@ export default function AssessmentsPage() {
           <TabsContent value="mcq" className="space-y-4">
             {mcqTests.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {mcqTests.map((test) => (
-                  <Link key={test._id} href={`/assessments/${test._id}`}>
+                {mcqTests.map((test) => {
+                  const testId = (test as any).id || test._id;
+                  return (
+                  <Link key={testId} href={`/assessments/${testId}`}>
                     <Card className="group h-full transition-colors hover:bg-muted/50">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between">
@@ -192,7 +194,8 @@ export default function AssessmentsPage() {
                       </CardContent>
                     </Card>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <EmptyState
@@ -216,8 +219,10 @@ export default function AssessmentsPage() {
           <TabsContent value="coding" className="space-y-4">
             {codingAssessments.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {codingAssessments.map((assessment) => (
-                  <Link key={assessment._id} href={`/assessments/${assessment._id}`}>
+                {codingAssessments.map((assessment) => {
+                  const assessId = (assessment as any).id || assessment._id;
+                  return (
+                  <Link key={assessId} href={`/assessments/${assessId}`}>
                     <Card className="group h-full transition-colors hover:bg-muted/50">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between">
@@ -269,7 +274,8 @@ export default function AssessmentsPage() {
                       </CardContent>
                     </Card>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <EmptyState
