@@ -1,5 +1,5 @@
 import { PrismaClient, CourseCategory } from '@prisma/client';
-import { ICourseRepository } from '@domain/repositories/ICourseRepository';
+import { ICourseRepository, CourseFilter } from '@domain/repositories/ICourseRepository';
 import { Course } from '@domain/entities/Course';
 
 export class PrismaCourseRepository implements ICourseRepository {
@@ -93,9 +93,47 @@ export class PrismaCourseRepository implements ICourseRepository {
     }
   }
 
-  async findAll(): Promise<Course[]> {
-    const courses = await this.prisma.course.findMany();
-    return courses.map((c) => this.mapToEntity(c));
+  async findAll(filter?: CourseFilter): Promise<{ data: Course[]; total: number }> {
+    const where: Record<string, unknown> = {};
+    if (filter?.search) {
+      where.OR = [
+        { title: { contains: filter.search, mode: 'insensitive' } },
+        { description: { contains: filter.search, mode: 'insensitive' } },
+      ];
+    }
+    if (filter?.category) {
+      where.category = filter.category as CourseCategory;
+    }
+    if (filter?.collegeId) {
+      where.collegeId = filter.collegeId;
+    }
+    if (filter?.trainerId) {
+      where.trainerId = filter.trainerId;
+    }
+    if (filter?.isPublished !== undefined) {
+      where.isPublished = filter.isPublished;
+    }
+
+    const page = filter?.page || 1;
+    const limit = filter?.limit || 10;
+    const skip = (page - 1) * limit;
+    const orderField = filter?.sortBy || 'createdAt';
+    const orderDir = filter?.sortOrder || 'desc';
+
+    const [courses, total] = await Promise.all([
+      this.prisma.course.findMany({
+        where: where as any,
+        skip,
+        take: limit,
+        orderBy: { [orderField]: orderDir },
+      }),
+      this.prisma.course.count({ where: where as any }),
+    ]);
+
+    return {
+      data: courses.map((c) => this.mapToEntity(c)),
+      total,
+    };
   }
 
   async findBySlug(slug: string): Promise<Course | null> {
