@@ -69,19 +69,20 @@ export default function SuperAdminDashboard() {
         collegeService.getAll({ page: 1, limit: 10 }),
       ]);
 
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data);
-      if (trendRes.status === 'fulfilled') setEnrollmentTrend(trendRes.value.data.data);
-      if (courseDistRes.status === 'fulfilled') setCourseDistribution(courseDistRes.value.data.data);
-      if (revenueRes.status === 'fulfilled') setRevenueData(revenueRes.value.data.data);
+      if (statsRes.status === 'fulfilled' && statsRes.value.data?.data) setStats(statsRes.value.data.data);
+      if (trendRes.status === 'fulfilled' && trendRes.value.data?.data) setEnrollmentTrend(trendRes.value.data.data);
+      if (courseDistRes.status === 'fulfilled' && courseDistRes.value.data?.data) setCourseDistribution(courseDistRes.value.data.data);
+      if (revenueRes.status === 'fulfilled' && revenueRes.value.data?.data) setRevenueData(revenueRes.value.data.data);
 
-      if (collegesRes.status === 'fulfilled') {
+      if (collegesRes.status === 'fulfilled' && Array.isArray(collegesRes.value.data?.data)) {
+        const items = collegesRes.value.data.data as College[];
         setCollegeGrowth(
-          collegesRes.value.data.data.map((c: College) => ({
+          items.map((c: College) => ({
             label: c.name,
             value: 1,
           }))
         );
-        const pending = collegesRes.value.data.data.filter((c: College) => !c.isActive);
+        const pending = items.filter((c: College) => !c.isActive);
         setPendingColleges(pending);
       }
     } catch (err) {

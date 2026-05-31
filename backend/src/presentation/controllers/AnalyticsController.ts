@@ -52,6 +52,55 @@ export class AnalyticsController {
     }
   };
 
+  getEnrollmentTrend = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.getStudentGrowthUseCase.execute(req.query as never);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getStudentDistribution = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.status(200).json({ success: true, data: [] });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getCourseCompletion = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.status(200).json({ success: true, data: [] });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getTopCourses = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.status(200).json({ success: true, data: [] });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getAttendanceAnalytics = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.status(200).json({ success: true, data: [] });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getPerformanceMetrics = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.status(200).json({ success: true, data: {} });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getRevenueAnalytics = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       res.status(200).json({ success: true, data: { message: 'Revenue analytics endpoint' } });
