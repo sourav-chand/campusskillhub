@@ -131,7 +131,7 @@ export const collegeController = new CollegeController(
 );
 
 export const courseController = new CourseController(
-  new CreateCourseUseCase(repositories.courseRepository as never, repositories.collegeRepository as never, repositories.userRepository as never),
+  new CreateCourseUseCase(repositories.courseRepository as never, repositories.collegeRepository as never),
   new UpdateCourseUseCase(repositories.courseRepository as never),
   new GetCourseUseCase(repositories.courseRepository as never),
   new ListCoursesUseCase(repositories.courseRepository as never),

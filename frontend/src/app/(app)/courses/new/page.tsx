@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 import { courseService } from '@/services/course.service';
+import { collegeService } from '@/services/college.service';
+import { userService } from '@/services/user.service';
 import { ChevronLeft, Plus, X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,8 +44,8 @@ const createCourseSchema = z.object({
   duration: z.coerce.number().int().positive('Duration must be positive'),
   price: z.coerce.number().min(0, 'Price must be 0 or greater').default(0),
   thumbnail: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  collegeId: z.string().optional().or(z.literal('')),
-  trainerId: z.string().min(1, 'Trainer ID is required'),
+  collegeId: z.string().optional(),
+  trainerId: z.string().optional(),
   tags: z.array(z.string()).optional(),
   prerequisites: z.array(z.string()).optional(),
   learningObjectives: z.array(z.string()).optional(),
@@ -70,6 +72,15 @@ export default function CreateCoursePage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [tagInput, setTagInput] = React.useState('');
   const [prereqInput, setPrereqInput] = React.useState('');
+  const [colleges, setColleges] = React.useState<any[]>([]);
+  const [trainers, setTrainers] = React.useState<any[]>([]);
+  const [loadingData, setLoadingData] = React.useState(true);
+
+  const userRole = (user?.role || '').toLowerCase();
+  const isSuperAdmin = userRole === 'super_admin';
+  const isCollegeAdmin = userRole === 'admin' || userRole === 'college_admin';
+  const isTrainer = userRole === 'instructor' || userRole === 'trainer';
+  const canManageAll = isSuperAdmin || isCollegeAdmin;
 
   const form = useForm<CreateCourseFormValues>({
     resolver: zodResolver(createCourseSchema),
@@ -82,13 +93,43 @@ export default function CreateCoursePage() {
       duration: 0,
       price: 0,
       thumbnail: '',
-      collegeId: (user as any)?.collegeId || (user as any)?.college || '',
+      collegeId: '',
       trainerId: '',
       tags: [],
       prerequisites: [],
       learningObjectives: [],
     },
   });
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [collegesRes, usersRes] = await Promise.allSettled([
+          collegeService.getAll({ limit: 100 }),
+          userService.getAll(),
+        ]);
+
+        if (collegesRes.status === 'fulfilled') {
+          const data = collegesRes.value.data?.data || collegesRes.value.data || [];
+          setColleges(Array.isArray(data) ? data : []);
+        }
+
+        if (usersRes.status === 'fulfilled') {
+          const data = usersRes.value.data?.data || usersRes.value.data || [];
+          const allUsers = Array.isArray(data) ? data : [];
+          const trainerList = allUsers.filter((u: any) => {
+            const role = (u.role || '').toUpperCase();
+            return role === 'TRAINER' || role === 'INSTRUCTOR';
+          });
+          setTrainers(trainerList);
+        }
+      } catch {
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const tags = form.watch('tags') || [];
   const prerequisites = form.watch('prerequisites') || [];
@@ -123,6 +164,7 @@ export default function CreateCoursePage() {
       setSubmitting(true);
       const payload: Record<string, unknown> = {
         ...values,
+        trainerId: values.trainerId || (user as any)?.id || (user as any)?._id,
         collegeId: values.collegeId || undefined,
         shortDescription: values.shortDescription || undefined,
         thumbnail: values.thumbnail || undefined,
@@ -144,6 +186,14 @@ export default function CreateCoursePage() {
       setSubmitting(false);
     }
   };
+
+  if (loadingData) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -380,11 +430,24 @@ export default function CreateCoursePage() {
                   name="collegeId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>College ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="College UUID" {...field} />
-                      </FormControl>
-                      <FormDescription>Optional. Leave blank to use your college</FormDescription>
+                      <FormLabel>College</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a college" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {colleges
+                            .filter((c: any) => c.isActive !== false)
+                            .map((college: any) => (
+                              <SelectItem key={college.id || college._id} value={college.id || college._id}>
+                                {college.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Optional. Leave blank for no college</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -394,11 +457,33 @@ export default function CreateCoursePage() {
                   name="trainerId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Trainer ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Trainer UUID" {...field} />
-                      </FormControl>
-                      <FormDescription>Your trainer profile identifier</FormDescription>
+                      <FormLabel>Trainer</FormLabel>
+                      {canManageAll ? (
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a trainer" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {trainers.map((t: any) => {
+                              const tid = t.id || t._id;
+                              const tName = t.firstName && t.lastName
+                                ? `${t.firstName} ${t.lastName}`
+                                : t.name || t.email || tid;
+                              return (
+                                <SelectItem key={tid} value={tid}>
+                                  {tName}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="text-sm text-muted-foreground py-2">
+                          You will be assigned as the trainer for this course
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

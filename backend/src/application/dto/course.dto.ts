@@ -17,7 +17,7 @@ export const CreateCourseDtoSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
   description: z.string().min(10, 'Description must be at least 10 characters').max(5000),
   shortDescription: z.string().max(300).optional(),
-  category: z.string().min(2).max(100),
+  category: z.string().min(2).max(100).transform(val => val.toUpperCase()),
   subcategory: z.string().max(100).optional(),
   level: z.enum(['beginner', 'intermediate', 'advanced']).default('beginner'),
   duration: z.number().int().positive('Duration must be in hours'),
@@ -27,7 +27,7 @@ export const CreateCourseDtoSchema = z.object({
   learningObjectives: z.array(z.string()).optional(),
   modules: z.array(ModuleSchema).min(1, 'At least one module is required').optional(),
   collegeId: z.string().uuid().optional(),
-  trainerId: z.string().uuid(),
+  trainerId: z.string().uuid().optional(),
   tags: z.array(z.string()).optional(),
   price: z.number().min(0).default(0),
 });
@@ -80,7 +80,7 @@ export interface CourseResponseDto {
       type: string;
     }>;
   }>;
-  collegeId: string;
+  collegeId?: string;
   collegeName?: string;
   trainerId: string;
   trainerName?: string;

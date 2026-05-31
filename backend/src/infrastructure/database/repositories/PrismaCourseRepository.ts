@@ -17,7 +17,7 @@ export class PrismaCourseRepository implements ICourseRepository {
     totalLessons: number;
     price: number | null;
     isPublished: boolean;
-    collegeId: string;
+    collegeId: string | null;
     trainerId: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -47,23 +47,22 @@ export class PrismaCourseRepository implements ICourseRepository {
   }
 
   async create(course: Course): Promise<Course> {
-    const created = await this.prisma.course.create({
-      data: {
-        id: course.id,
-        title: course.title,
-        slug: course.slug,
-        description: course.description,
-        category: course.category as CourseCategory,
-        thumbnail: course.thumbnail,
-        duration: course.duration,
-        totalModules: course.totalModules,
-        totalLessons: course.totalLessons,
-        price: course.price,
-        isPublished: course.isPublished,
-        collegeId: course.collegeId,
-        trainerId: course.trainerId,
-      },
-    });
+    const data: Record<string, unknown> = {
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      category: course.category as CourseCategory,
+      thumbnail: course.thumbnail,
+      duration: course.duration,
+      totalModules: course.totalModules,
+      totalLessons: course.totalLessons,
+      price: course.price,
+      isPublished: course.isPublished,
+      trainerId: course.trainerId || null,
+    };
+    if (course.id) data.id = course.id;
+    if (course.collegeId) data.collegeId = course.collegeId;
+    const created = await this.prisma.course.create({ data: data as any });
     return this.mapToEntity(created);
   }
 
@@ -122,7 +121,7 @@ export class PrismaCourseRepository implements ICourseRepository {
     if (!course) return null;
     return {
       ...course,
-      collegeName: course.college.name,
+      collegeName: course.college?.name ?? null,
       trainerName: course.trainer ? `${course.trainer.user.firstName} ${course.trainer.user.lastName}` : null,
       enrollmentCount: course._count.enrollments,
       trainer: undefined,

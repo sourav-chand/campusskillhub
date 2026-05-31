@@ -32,6 +32,9 @@ enum CourseCategory {
   DOTNET
   PYTHON
   DATA_SCIENCE
+  ARTIFICIAL_INTELLIGENCE
+  MOBILE_DEVELOPMENT
+  CYBERSECURITY
 }
 
 enum AssessmentType {
@@ -205,8 +208,8 @@ model Course {
   totalLessons  Int            @default(0)
   price         Float?
   isPublished   Boolean        @default(false)
-  collegeId     String
-  college       College        @relation(fields: [collegeId], references: [id])
+  collegeId     String?
+  college       College?       @relation(fields: [collegeId], references: [id])
   trainerId     String?
   trainer       Trainer?       @relation(fields: [trainerId], references: [id])
   createdAt     DateTime       @default(now())

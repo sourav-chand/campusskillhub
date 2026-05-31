@@ -8,10 +8,10 @@ import { CreateCourseSchema, UpdateCourseSchema } from '@presentation/validators
 const router = Router();
 
 router.get('/categories/list', courseController.getCategories);
-router.post('/', authenticate, authorize('admin', 'college_admin', 'trainer'), validate({ body: CreateCourseSchema }), courseController.create);
+router.post('/', authenticate, authorize('super_admin', 'college_admin', 'trainer'), validate({ body: CreateCourseSchema }), courseController.create);
 router.get('/', courseController.list);
 router.get('/:id', courseController.getById);
-router.put('/:id', authenticate, authorize('admin', 'college_admin', 'trainer'), validate({ body: UpdateCourseSchema }), courseController.update);
-router.patch('/:id/publish', authenticate, authorize('admin', 'college_admin'), courseController.publish);
+router.put('/:id', authenticate, authorize('super_admin', 'college_admin', 'trainer'), validate({ body: UpdateCourseSchema }), courseController.update);
+router.patch('/:id/publish', authenticate, authorize('super_admin', 'college_admin'), courseController.publish);
 
 export default router;

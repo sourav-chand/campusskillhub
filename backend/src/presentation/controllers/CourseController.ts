@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import { container } from '@config/container';
 import { CreateCourseUseCase } from '@application/usecases/course/create-course.usecase';
 import { UpdateCourseUseCase } from '@application/usecases/course/update-course.usecase';
 import { GetCourseUseCase } from '@application/usecases/course/get-course.usecase';
 import { ListCoursesUseCase } from '@application/usecases/course/list-courses.usecase';
 import { PublishCourseUseCase } from '@application/usecases/course/publish-course.usecase';
+import { AppError } from '@shared/errors/AppError';
 
 export class CourseController {
   constructor(
@@ -16,7 +18,16 @@ export class CourseController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.createCourseUseCase.execute(req.body);
+      const userId = req.body.trainerId || (req.user as any).userId;
+      const trainer = await container.prisma.trainer.findUnique({ where: { userId } });
+      if (!trainer) {
+        throw new AppError('Trainer profile not found for this user', 400);
+      }
+      const body = {
+        ...req.body,
+        trainerId: trainer.id,
+      };
+      const result = await this.createCourseUseCase.execute(body);
       res.status(201).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -25,7 +36,7 @@ export class CourseController {
 
   update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.updateCourseUseCase.execute(req.params.id, req.body);
+      const result = await this.updateCourseUseCase.execute(req.params.id as string, req.body);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -34,7 +45,7 @@ export class CourseController {
 
   getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.getCourseUseCase.execute(req.params.id);
+      const result = await this.getCourseUseCase.execute(req.params.id as string);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -53,7 +64,7 @@ export class CourseController {
   publish = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const publish = req.body.publish !== false;
-      const result = await this.publishCourseUseCase.execute(req.params.id, publish);
+      const result = await this.publishCourseUseCase.execute(req.params.id as string, publish);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);

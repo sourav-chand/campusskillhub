@@ -11,15 +11,10 @@ export interface ICollegeRepository {
   findById(id: string): Promise<unknown>;
 }
 
-export interface IUserRepository {
-  findById(id: string): Promise<unknown>;
-}
-
 export class CreateCourseUseCase {
   constructor(
     private courseRepository: ICourseRepository,
     private collegeRepository: ICollegeRepository,
-    private userRepository: IUserRepository,
   ) {}
 
   async execute(dto: CreateCourseDto) {
@@ -37,9 +32,8 @@ export class CreateCourseUseCase {
       }
     }
 
-    const trainer = await this.userRepository.findById(trainerId);
-    if (!trainer) {
-      throw new AppError('Trainer not found', 404);
+    if (!trainerId) {
+      throw new AppError('Trainer ID is required', 400);
     }
 
     const slug = generateSlug(parsed.data.title);

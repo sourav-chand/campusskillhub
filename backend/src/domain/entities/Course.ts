@@ -13,7 +13,7 @@ export class Course {
     public totalLessons: number,
     public readonly price: number,
     public isPublished: boolean,
-    public readonly collegeId: string,
+    public readonly collegeId: string | null,
     public readonly trainerId: string,
     public readonly createdAt: Date = new Date(),
     public readonly updatedAt: Date = new Date(),
@@ -27,7 +27,7 @@ export class Course {
     thumbnail?: string;
     duration: number;
     price: number;
-    collegeId: string;
+    collegeId?: string;
     trainerId: string;
   }): Course {
     return new Course(
@@ -42,7 +42,7 @@ export class Course {
       0,
       props.price,
       false,
-      props.collegeId,
+      props.collegeId ?? null,
       props.trainerId,
     );
   }
