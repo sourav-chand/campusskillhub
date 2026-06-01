@@ -20,6 +20,7 @@ interface RegisterPayload {
   role?: string;
   phone?: string;
   collegeCode?: string;
+  rollNumber?: string;
 }
 
 export function useAuth() {
