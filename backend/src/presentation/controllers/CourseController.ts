@@ -244,6 +244,131 @@ export class CourseController {
     }
   };
 
+  // --- MCQ Assessment endpoints ---
+
+  getMcqTests = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tests = await container.prisma.mCQTest.findMany({
+        where: { courseId: req.params.id as string },
+        include: { questions: { include: { options: true }, orderBy: { order: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.status(200).json({ success: true, data: tests.map(t => ({ ...t, _id: t.id })) });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addMcqTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const test = await container.prisma.mCQTest.create({
+        data: {
+          title: req.body.title,
+          description: req.body.description,
+          duration: req.body.duration ?? 30,
+          passingScore: req.body.passingScore ?? 40,
+          totalQuestions: req.body.totalQuestions ?? 0,
+          scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : undefined,
+          course: { connect: { id: req.params.id as string } },
+        },
+      });
+      res.status(201).json({ success: true, data: { ...test, _id: test.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateMcqTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data: Record<string, unknown> = {};
+      if (req.body.title !== undefined) data.title = req.body.title;
+      if (req.body.description !== undefined) data.description = req.body.description;
+      if (req.body.duration !== undefined) data.duration = req.body.duration;
+      if (req.body.passingScore !== undefined) data.passingScore = req.body.passingScore;
+      if (req.body.totalQuestions !== undefined) data.totalQuestions = req.body.totalQuestions;
+      if (req.body.scheduledAt !== undefined) data.scheduledAt = req.body.scheduledAt ? new Date(req.body.scheduledAt) : null;
+      const test = await container.prisma.mCQTest.update({
+        where: { id: req.params.mcqId as string },
+        data,
+      });
+      res.status(200).json({ success: true, data: { ...test, _id: test.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteMcqTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await container.prisma.mCQTest.delete({ where: { id: req.params.mcqId as string } });
+      res.status(200).json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // --- Coding Assessment endpoints ---
+
+  getCodingAssessments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const assessments = await container.prisma.codingAssessment.findMany({
+        where: { courseId: req.params.id as string },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.status(200).json({ success: true, data: assessments.map(a => ({ ...a, _id: a.id })) });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addCodingAssessment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const assessment = await container.prisma.codingAssessment.create({
+        data: {
+          title: req.body.title,
+          description: req.body.description,
+          duration: req.body.duration ?? 60,
+          language: req.body.language ?? 'javascript',
+          problemStatement: req.body.problemStatement,
+          testCases: req.body.testCases || '[]',
+          passingScore: req.body.passingScore ?? 50,
+          course: { connect: { id: req.params.id as string } },
+        },
+      });
+      res.status(201).json({ success: true, data: { ...assessment, _id: assessment.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateCodingAssessment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data: Record<string, unknown> = {};
+      if (req.body.title !== undefined) data.title = req.body.title;
+      if (req.body.description !== undefined) data.description = req.body.description;
+      if (req.body.duration !== undefined) data.duration = req.body.duration;
+      if (req.body.language !== undefined) data.language = req.body.language;
+      if (req.body.problemStatement !== undefined) data.problemStatement = req.body.problemStatement;
+      if (req.body.testCases !== undefined) data.testCases = req.body.testCases;
+      if (req.body.passingScore !== undefined) data.passingScore = req.body.passingScore;
+      const assessment = await container.prisma.codingAssessment.update({
+        where: { id: req.params.codingId as string },
+        data,
+      });
+      res.status(200).json({ success: true, data: { ...assessment, _id: assessment.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteCodingAssessment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await container.prisma.codingAssessment.delete({ where: { id: req.params.codingId as string } });
+      res.status(200).json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getCategories = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const categories = [

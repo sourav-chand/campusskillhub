@@ -402,7 +402,7 @@ export default function CourseDetailPage() {
                 title="No assessments yet"
                 description={isTrainer ? 'Create assessments for this course' : 'No assessments have been posted yet'}
                 actionLabel={isTrainer ? 'Create Assessment' : undefined}
-                onAction={isTrainer ? () => {} : undefined}
+                onAction={isTrainer ? () => window.location.href = `/courses/${courseId}/edit` : undefined}
               />
             </CardContent>
           </Card>

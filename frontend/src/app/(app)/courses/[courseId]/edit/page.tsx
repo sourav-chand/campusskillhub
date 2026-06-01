@@ -256,6 +256,29 @@ export default function EditCoursePage() {
   const [assignmentFormFileUrl, setAssignmentFormFileUrl] = React.useState('');
   const [savingAssignment, setSavingAssignment] = React.useState(false);
 
+  // MCQ Assessment state
+  const [mcqTests, setMcqTests] = React.useState<any[]>([]);
+  const [mcqDialogOpen, setMcqDialogOpen] = React.useState(false);
+  const [editingMcq, setEditingMcq] = React.useState<any>(null);
+  const [mcqFormTitle, setMcqFormTitle] = React.useState('');
+  const [mcqFormDesc, setMcqFormDesc] = React.useState('');
+  const [mcqFormDuration, setMcqFormDuration] = React.useState('30');
+  const [mcqFormPassingScore, setMcqFormPassingScore] = React.useState('40');
+  const [savingMcq, setSavingMcq] = React.useState(false);
+
+  // Coding Assessment state
+  const [codingAssessments, setCodingAssessments] = React.useState<any[]>([]);
+  const [codingDialogOpen, setCodingDialogOpen] = React.useState(false);
+  const [editingCoding, setEditingCoding] = React.useState<any>(null);
+  const [codingFormTitle, setCodingFormTitle] = React.useState('');
+  const [codingFormDesc, setCodingFormDesc] = React.useState('');
+  const [codingFormDuration, setCodingFormDuration] = React.useState('60');
+  const [codingFormLanguage, setCodingFormLanguage] = React.useState('javascript');
+  const [codingFormProblem, setCodingFormProblem] = React.useState('');
+  const [codingFormTestCases, setCodingFormTestCases] = React.useState('');
+  const [codingFormPassingScore, setCodingFormPassingScore] = React.useState('50');
+  const [savingCoding, setSavingCoding] = React.useState(false);
+
   const normalizeModules = (data: any[]) =>
     data.map((mod: any) => ({
       ...mod,
@@ -533,6 +556,150 @@ export default function EditCoursePage() {
       await refreshAssignments();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete assignment');
+    }
+  };
+
+  // ---- MCQ Assessment CRUD ----
+
+  const refreshMcqTests = React.useCallback(async () => {
+    try {
+      const res = await courseService.getMcqTests(courseId);
+      const data = res.data.data;
+      setMcqTests(Array.isArray(data) ? data : []);
+    } catch { /* silent */ }
+  }, [courseId]);
+
+  React.useEffect(() => { refreshMcqTests(); }, [refreshMcqTests]);
+
+  const openAddMcq = () => {
+    setEditingMcq(null);
+    setMcqFormTitle('');
+    setMcqFormDesc('');
+    setMcqFormDuration('30');
+    setMcqFormPassingScore('40');
+    setMcqDialogOpen(true);
+  };
+
+  const openEditMcq = (t: any) => {
+    setEditingMcq(t);
+    setMcqFormTitle(t.title || '');
+    setMcqFormDesc(t.description || '');
+    setMcqFormDuration(String(t.duration ?? 30));
+    setMcqFormPassingScore(String(t.passingScore ?? 40));
+    setMcqDialogOpen(true);
+  };
+
+  const saveMcq = async () => {
+    if (!mcqFormTitle.trim()) { toast.error('Title is required'); return; }
+    try {
+      setSavingMcq(true);
+      const payload: Record<string, unknown> = {
+        title: mcqFormTitle.trim(),
+        description: mcqFormDesc.trim() || undefined,
+        duration: Number(mcqFormDuration) || 30,
+        passingScore: Number(mcqFormPassingScore) || 40,
+      };
+      if (editingMcq) {
+        await courseService.updateMcqTest(courseId, editingMcq._id || editingMcq.id, payload);
+        toast.success('MCQ test updated');
+      } else {
+        await courseService.addMcqTest(courseId, payload);
+        toast.success('MCQ test added');
+      }
+      setMcqDialogOpen(false);
+      await refreshMcqTests();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save MCQ test');
+    } finally {
+      setSavingMcq(false);
+    }
+  };
+
+  const deleteMcq = async (mcqId: string) => {
+    if (!confirm('Delete this MCQ test?')) return;
+    try {
+      await courseService.deleteMcqTest(courseId, mcqId);
+      toast.success('MCQ test deleted');
+      await refreshMcqTests();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete MCQ test');
+    }
+  };
+
+  // ---- Coding Assessment CRUD ----
+
+  const refreshCodingAssessments = React.useCallback(async () => {
+    try {
+      const res = await courseService.getCodingAssessments(courseId);
+      const data = res.data.data;
+      setCodingAssessments(Array.isArray(data) ? data : []);
+    } catch { /* silent */ }
+  }, [courseId]);
+
+  React.useEffect(() => { refreshCodingAssessments(); }, [refreshCodingAssessments]);
+
+  const openAddCoding = () => {
+    setEditingCoding(null);
+    setCodingFormTitle('');
+    setCodingFormDesc('');
+    setCodingFormDuration('60');
+    setCodingFormLanguage('javascript');
+    setCodingFormProblem('');
+    setCodingFormTestCases('');
+    setCodingFormPassingScore('50');
+    setCodingDialogOpen(true);
+  };
+
+  const openEditCoding = (a: any) => {
+    setEditingCoding(a);
+    setCodingFormTitle(a.title || '');
+    setCodingFormDesc(a.description || '');
+    setCodingFormDuration(String(a.duration ?? 60));
+    setCodingFormLanguage(a.language || 'javascript');
+    setCodingFormProblem(a.problemStatement || '');
+    setCodingFormTestCases(a.testCases || '');
+    setCodingFormPassingScore(String(a.passingScore ?? 50));
+    setCodingDialogOpen(true);
+  };
+
+  const saveCoding = async () => {
+    if (!codingFormTitle.trim()) { toast.error('Title is required'); return; }
+    if (!codingFormProblem.trim()) { toast.error('Problem statement is required'); return; }
+    try {
+      setSavingCoding(true);
+      const payload: Record<string, unknown> = {
+        title: codingFormTitle.trim(),
+        description: codingFormDesc.trim() || undefined,
+        duration: Number(codingFormDuration) || 60,
+        language: codingFormLanguage,
+        problemStatement: codingFormProblem.trim(),
+        testCases: codingFormTestCases || '[]',
+        passingScore: Number(codingFormPassingScore) || 50,
+      };
+      if (editingCoding) {
+        await courseService.updateCodingAssessment(courseId, editingCoding._id || editingCoding.id, payload);
+        toast.success('Coding assessment updated');
+      } else {
+        await courseService.addCodingAssessment(courseId, payload);
+        toast.success('Coding assessment added');
+      }
+      setCodingDialogOpen(false);
+      await refreshCodingAssessments();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save coding assessment');
+    } finally {
+      setSavingCoding(false);
+    }
+  };
+
+  const deleteCoding = async (codingId: string) => {
+    if (!confirm('Delete this coding assessment?')) return;
+    try {
+      await courseService.deleteCodingAssessment(courseId, codingId);
+      toast.success('Coding assessment deleted');
+      await refreshCodingAssessments();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete coding assessment');
     }
   };
 
@@ -1143,6 +1310,116 @@ export default function EditCoursePage() {
             </CardContent>
           </Card>
 
+          {/* MCQ Assessments */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">MCQ Tests</CardTitle>
+                <CardDescription>Create and manage MCQ assessments</CardDescription>
+              </div>
+              <Button type="button" size="sm" onClick={openAddMcq}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add MCQ Test
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {mcqTests.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+                  <BookOpen className="mb-4 h-10 w-10 text-muted-foreground/60" />
+                  <h3 className="mb-1 text-sm font-semibold">No MCQ tests yet</h3>
+                  <p className="mb-4 max-w-xs text-sm text-muted-foreground">
+                    Create MCQ tests with duration and passing score
+                  </p>
+                  <Button type="button" size="sm" onClick={openAddMcq}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add MCQ Test
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {mcqTests.map((t) => (
+                    <div key={t._id || t.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{t.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Duration: {t.duration}min | Passing: {t.passingScore}% | Questions: {t.totalQuestions ?? t.questions?.length ?? 0}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditMcq(t)}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteMcq(t._id || t.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Coding Assessments */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Coding Assessments</CardTitle>
+                <CardDescription>Create and manage coding challenges</CardDescription>
+              </div>
+              <Button type="button" size="sm" onClick={openAddCoding}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add Coding Assessment
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {codingAssessments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+                  <BookOpen className="mb-4 h-10 w-10 text-muted-foreground/60" />
+                  <h3 className="mb-1 text-sm font-semibold">No coding assessments yet</h3>
+                  <p className="mb-4 max-w-xs text-sm text-muted-foreground">
+                    Create coding challenges with test cases
+                  </p>
+                  <Button type="button" size="sm" onClick={openAddCoding}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add Coding Assessment
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {codingAssessments.map((a) => (
+                    <div key={a._id || a.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{a.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {a.language} | Duration: {a.duration}min | Passing: {a.passingScore}%
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditCoding(a)}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteCoding(a._id || a.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Module Dialog */}
           <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
             <DialogContent>
@@ -1391,6 +1668,157 @@ export default function EditCoursePage() {
                 <Button type="button" variant="outline" onClick={() => setAssignmentDialogOpen(false)}>Cancel</Button>
                 <Button type="button" onClick={saveAssignment} disabled={savingAssignment}>
                   {savingAssignment ? 'Saving...' : editingAssignment ? 'Update' : 'Add'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* MCQ Test Dialog */}
+          <Dialog open={mcqDialogOpen} onOpenChange={setMcqDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingMcq ? 'Edit MCQ Test' : 'Add MCQ Test'}</DialogTitle>
+                <DialogDescription>
+                  {editingMcq ? 'Update the MCQ test details' : 'Create a new MCQ test'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    placeholder="MCQ test title"
+                    value={mcqFormTitle}
+                    onChange={(e) => setMcqFormTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description (optional)</label>
+                  <Textarea
+                    placeholder="Test description"
+                    value={mcqFormDesc}
+                    onChange={(e) => setMcqFormDesc(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Duration (minutes)</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={mcqFormDuration}
+                      onChange={(e) => setMcqFormDuration(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Passing Score (%)</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={mcqFormPassingScore}
+                      onChange={(e) => setMcqFormPassingScore(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setMcqDialogOpen(false)}>Cancel</Button>
+                <Button type="button" onClick={saveMcq} disabled={savingMcq}>
+                  {savingMcq ? 'Saving...' : editingMcq ? 'Update' : 'Add'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Coding Assessment Dialog */}
+          <Dialog open={codingDialogOpen} onOpenChange={setCodingDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingCoding ? 'Edit Coding Assessment' : 'Add Coding Assessment'}</DialogTitle>
+                <DialogDescription>
+                  {editingCoding ? 'Update the coding assessment details' : 'Create a new coding assessment'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    placeholder="Coding assessment title"
+                    value={codingFormTitle}
+                    onChange={(e) => setCodingFormTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description (optional)</label>
+                  <Textarea
+                    placeholder="Assessment description"
+                    value={codingFormDesc}
+                    onChange={(e) => setCodingFormDesc(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Problem Statement</label>
+                  <Textarea
+                    placeholder="Describe the coding problem..."
+                    value={codingFormProblem}
+                    onChange={(e) => setCodingFormProblem(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Test Cases (JSON)</label>
+                  <Textarea
+                    placeholder='[{"input": "5", "expected": "25"}]'
+                    value={codingFormTestCases}
+                    onChange={(e) => setCodingFormTestCases(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Duration (minutes)</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={codingFormDuration}
+                      onChange={(e) => setCodingFormDuration(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Language</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={codingFormLanguage}
+                      onChange={(e) => setCodingFormLanguage(e.target.value)}
+                    >
+                      <option value="javascript">JavaScript</option>
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                      <option value="csharp">C#</option>
+                      <option value="go">Go</option>
+                      <option value="rust">Rust</option>
+                      <option value="typescript">TypeScript</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Passing Score (%)</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={codingFormPassingScore}
+                      onChange={(e) => setCodingFormPassingScore(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setCodingDialogOpen(false)}>Cancel</Button>
+                <Button type="button" onClick={saveCoding} disabled={savingCoding}>
+                  {savingCoding ? 'Saving...' : editingCoding ? 'Update' : 'Add'}
                 </Button>
               </DialogFooter>
             </DialogContent>

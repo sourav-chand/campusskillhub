@@ -37,4 +37,16 @@ router.post('/:id/assignments', authenticate, authorize('super_admin', 'college_
 router.put('/:id/assignments/:assignmentId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.updateAssignment);
 router.delete('/:id/assignments/:assignmentId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.deleteAssignment);
 
+// MCQ Assessment routes
+router.get('/:id/assessments/mcq', authenticate, courseController.getMcqTests);
+router.post('/:id/assessments/mcq', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.addMcqTest);
+router.put('/:id/assessments/mcq/:mcqId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.updateMcqTest);
+router.delete('/:id/assessments/mcq/:mcqId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.deleteMcqTest);
+
+// Coding Assessment routes
+router.get('/:id/assessments/coding', authenticate, courseController.getCodingAssessments);
+router.post('/:id/assessments/coding', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.addCodingAssessment);
+router.put('/:id/assessments/coding/:codingId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.updateCodingAssessment);
+router.delete('/:id/assessments/coding/:codingId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.deleteCodingAssessment);
+
 export default router;
