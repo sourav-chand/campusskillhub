@@ -62,4 +62,16 @@ export const courseService = {
 
   deleteStudyMaterial: (courseId: string, materialId: string) =>
     api.delete<ApiResponse<null>>(`/courses/${courseId}/materials/${materialId}`),
+
+  getAssignments: (id: string) =>
+    api.get<ApiResponse<any[]>>(`/courses/${id}/assignments`),
+
+  addAssignment: (id: string, payload: Record<string, unknown>) =>
+    api.post<ApiResponse<any>>(`/courses/${id}/assignments`, payload),
+
+  updateAssignment: (courseId: string, assignmentId: string, payload: Record<string, unknown>) =>
+    api.put<ApiResponse<any>>(`/courses/${courseId}/assignments/${assignmentId}`, payload),
+
+  deleteAssignment: (courseId: string, assignmentId: string) =>
+    api.delete<ApiResponse<null>>(`/courses/${courseId}/assignments/${assignmentId}`),
 };

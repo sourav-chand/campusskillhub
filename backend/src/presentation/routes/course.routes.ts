@@ -31,4 +31,10 @@ router.post('/:id/materials', authenticate, authorize('super_admin', 'college_ad
 router.put('/:id/materials/:materialId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.updateStudyMaterial);
 router.delete('/:id/materials/:materialId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.deleteStudyMaterial);
 
+// Assignment routes
+router.get('/:id/assignments', authenticate, courseController.getAssignments);
+router.post('/:id/assignments', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.addAssignment);
+router.put('/:id/assignments/:assignmentId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.updateAssignment);
+router.delete('/:id/assignments/:assignmentId', authenticate, authorize('super_admin', 'college_admin', 'trainer'), courseController.deleteAssignment);
+
 export default router;

@@ -39,13 +39,13 @@ import type { Course } from '@/types';
 
 const categories = [
   'All',
-  'Programming',
-  'Data Science',
-  'Web Development',
-  'Mobile Apps',
-  'AI & ML',
-  'Cloud Computing',
-  'Cybersecurity',
+  // 'Programming',
+  // 'Data Science',
+  // 'Web Development',
+  // 'Mobile Apps',
+  // 'AI & ML',
+  // 'Cloud Computing',
+  // 'Cybersecurity',
 ];
 
 export default function CoursesPage() {

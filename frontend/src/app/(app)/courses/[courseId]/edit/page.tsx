@@ -245,6 +245,17 @@ export default function EditCoursePage() {
   const [materialFormModuleId, setMaterialFormModuleId] = React.useState('');
   const [savingMaterial, setSavingMaterial] = React.useState(false);
 
+  const [assignments, setAssignments] = React.useState<any[]>([]);
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = React.useState(false);
+  const [editingAssignment, setEditingAssignment] = React.useState<any>(null);
+  const [assignmentFormTitle, setAssignmentFormTitle] = React.useState('');
+  const [assignmentFormDesc, setAssignmentFormDesc] = React.useState('');
+  const [assignmentFormDueDate, setAssignmentFormDueDate] = React.useState('');
+  const [assignmentFormMaxScore, setAssignmentFormMaxScore] = React.useState('100');
+  const [assignmentFormPassingScore, setAssignmentFormPassingScore] = React.useState('40');
+  const [assignmentFormFileUrl, setAssignmentFormFileUrl] = React.useState('');
+  const [savingAssignment, setSavingAssignment] = React.useState(false);
+
   const normalizeModules = (data: any[]) =>
     data.map((mod: any) => ({
       ...mod,
@@ -447,6 +458,81 @@ export default function EditCoursePage() {
       await refreshMaterials();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete material');
+    }
+  };
+
+  const refreshAssignments = React.useCallback(async () => {
+    try {
+      const res = await courseService.getAssignments(courseId);
+      const data = res.data.data;
+      setAssignments(Array.isArray(data) ? data : []);
+    } catch {
+      // silent
+    }
+  }, [courseId]);
+
+  React.useEffect(() => {
+    refreshAssignments();
+  }, [refreshAssignments]);
+
+  const openAddAssignment = () => {
+    setEditingAssignment(null);
+    setAssignmentFormTitle('');
+    setAssignmentFormDesc('');
+    setAssignmentFormDueDate('');
+    setAssignmentFormMaxScore('100');
+    setAssignmentFormPassingScore('40');
+    setAssignmentFormFileUrl('');
+    setAssignmentDialogOpen(true);
+  };
+
+  const openEditAssignment = (a: any) => {
+    setEditingAssignment(a);
+    setAssignmentFormTitle(a.title || '');
+    setAssignmentFormDesc(a.description || '');
+    setAssignmentFormDueDate(a.dueDate ? a.dueDate.slice(0, 10) : '');
+    setAssignmentFormMaxScore(String(a.maxScore ?? 100));
+    setAssignmentFormPassingScore(String(a.passingScore ?? 40));
+    setAssignmentFormFileUrl(a.fileUrl || '');
+    setAssignmentDialogOpen(true);
+  };
+
+  const saveAssignment = async () => {
+    if (!assignmentFormTitle.trim()) { toast.error('Assignment title is required'); return; }
+    try {
+      setSavingAssignment(true);
+      const payload: Record<string, unknown> = {
+        title: assignmentFormTitle.trim(),
+        description: assignmentFormDesc.trim() || undefined,
+        dueDate: assignmentFormDueDate || undefined,
+        maxScore: Number(assignmentFormMaxScore) || 100,
+        passingScore: Number(assignmentFormPassingScore) || 40,
+        fileUrl: assignmentFormFileUrl.trim() || undefined,
+      };
+      if (editingAssignment) {
+        await courseService.updateAssignment(courseId, editingAssignment._id || editingAssignment.id, payload);
+        toast.success('Assignment updated');
+      } else {
+        await courseService.addAssignment(courseId, payload);
+        toast.success('Assignment added');
+      }
+      setAssignmentDialogOpen(false);
+      await refreshAssignments();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save assignment');
+    } finally {
+      setSavingAssignment(false);
+    }
+  };
+
+  const deleteAssignment = async (assignmentId: string) => {
+    if (!confirm('Delete this assignment?')) return;
+    try {
+      await courseService.deleteAssignment(courseId, assignmentId);
+      toast.success('Assignment deleted');
+      await refreshAssignments();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete assignment');
     }
   };
 
@@ -1001,6 +1087,62 @@ export default function EditCoursePage() {
             </CardContent>
           </Card>
 
+          {/* Assignments */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Assignments</CardTitle>
+                <CardDescription>Create and manage course assignments</CardDescription>
+              </div>
+              <Button type="button" size="sm" onClick={openAddAssignment}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add Assignment
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {assignments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+                  <FileText className="mb-4 h-10 w-10 text-muted-foreground/60" />
+                  <h3 className="mb-1 text-sm font-semibold">No assignments yet</h3>
+                  <p className="mb-4 max-w-xs text-sm text-muted-foreground">
+                    Create assignments with due dates and scoring
+                  </p>
+                  <Button type="button" size="sm" onClick={openAddAssignment}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add Assignment
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {assignments.map((a) => (
+                    <div key={a._id || a.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{a.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Max: {a.maxScore} | Passing: {a.passingScore}
+                            {a.dueDate ? ` | Due: ${new Date(a.dueDate).toLocaleDateString()}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAssignment(a)}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteAssignment(a._id || a.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Module Dialog */}
           <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
             <DialogContent>
@@ -1176,6 +1318,79 @@ export default function EditCoursePage() {
                 <Button type="button" variant="outline" onClick={() => setMaterialDialogOpen(false)}>Cancel</Button>
                 <Button type="button" onClick={saveMaterial} disabled={savingMaterial}>
                   {savingMaterial ? 'Saving...' : editingMaterial ? 'Update' : 'Add'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Assignment Dialog */}
+          <Dialog open={assignmentDialogOpen} onOpenChange={setAssignmentDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingAssignment ? 'Edit Assignment' : 'Add Assignment'}</DialogTitle>
+                <DialogDescription>
+                  {editingAssignment ? 'Update the assignment details' : 'Create a new assignment'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    placeholder="Assignment title"
+                    value={assignmentFormTitle}
+                    onChange={(e) => setAssignmentFormTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <Textarea
+                    placeholder="Assignment description"
+                    value={assignmentFormDesc}
+                    onChange={(e) => setAssignmentFormDesc(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Due Date</label>
+                  <Input
+                    type="date"
+                    value={assignmentFormDueDate}
+                    onChange={(e) => setAssignmentFormDueDate(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Max Score</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={assignmentFormMaxScore}
+                      onChange={(e) => setAssignmentFormMaxScore(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Passing Score</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={assignmentFormPassingScore}
+                      onChange={(e) => setAssignmentFormPassingScore(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">File URL (optional)</label>
+                  <Input
+                    placeholder="https://example.com/assignment.pdf"
+                    value={assignmentFormFileUrl}
+                    onChange={(e) => setAssignmentFormFileUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setAssignmentDialogOpen(false)}>Cancel</Button>
+                <Button type="button" onClick={saveAssignment} disabled={savingAssignment}>
+                  {savingAssignment ? 'Saving...' : editingAssignment ? 'Update' : 'Add'}
                 </Button>
               </DialogFooter>
             </DialogContent>

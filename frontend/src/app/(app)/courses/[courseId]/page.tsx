@@ -48,8 +48,9 @@ export default function CourseDetailPage() {
   const [course, setCourse] = React.useState<Course | null>(null);
   const [activeTab, setActiveTab] = React.useState('overview');
 
-  const isTrainer = user?.role === 'instructor' || user?.role === 'admin' || user?.role === 'super_admin';
-  const isStudent = user?.role === 'student';
+  const userRole = (user?.role || '').toLowerCase();
+  const isTrainer = ['super_admin', 'college_admin', 'admin', 'trainer', 'instructor'].includes(userRole);
+  const isStudent = userRole === 'student';
 
   const fetchCourse = React.useCallback(async () => {
     try {
@@ -382,7 +383,7 @@ export default function CourseDetailPage() {
                 title="No assignments yet"
                 description={isTrainer ? 'Create assignments for this course' : 'No assignments have been posted yet'}
                 actionLabel={isTrainer ? 'Create Assignment' : undefined}
-                onAction={isTrainer ? () => {} : undefined}
+                onAction={isTrainer ? () => window.location.href = `/courses/${courseId}/edit` : undefined}
               />
             </CardContent>
           </Card>

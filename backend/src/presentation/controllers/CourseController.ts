@@ -180,6 +180,70 @@ export class CourseController {
     }
   };
 
+  getAssignments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const assignments = await container.prisma.assignment.findMany({
+        where: { courseId: req.params.id as string },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.status(200).json({ success: true, data: assignments.map(a => ({ ...a, _id: a.id })) });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addAssignment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = (req.user as any)?.userId || req.body.uploadedBy;
+      const trainer = await container.prisma.trainer.findUnique({ where: { userId } });
+      const trainerId = trainer?.id || req.body.trainerId;
+      if (!trainerId) throw new AppError('Trainer profile not found', 400);
+      const assignment = await container.prisma.assignment.create({
+        data: {
+          title: req.body.title,
+          description: req.body.description,
+          dueDate: new Date(req.body.dueDate),
+          maxScore: req.body.maxScore ?? 100,
+          passingScore: req.body.passingScore ?? 40,
+          fileUrl: req.body.fileUrl,
+          course: { connect: { id: req.params.id as string } },
+          trainer: { connect: { id: trainerId } },
+        },
+      });
+      res.status(201).json({ success: true, data: { ...assignment, _id: assignment.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateAssignment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data: Record<string, unknown> = {};
+      if (req.body.title !== undefined) data.title = req.body.title;
+      if (req.body.description !== undefined) data.description = req.body.description;
+      if (req.body.dueDate !== undefined) data.dueDate = new Date(req.body.dueDate);
+      if (req.body.maxScore !== undefined) data.maxScore = req.body.maxScore;
+      if (req.body.passingScore !== undefined) data.passingScore = req.body.passingScore;
+      if (req.body.fileUrl !== undefined) data.fileUrl = req.body.fileUrl;
+      const assignment = await container.prisma.assignment.update({
+        where: { id: req.params.assignmentId as string },
+        data,
+      });
+      res.status(200).json({ success: true, data: { ...assignment, _id: assignment.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteAssignment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await container.prisma.assignment.delete({ where: { id: req.params.assignmentId as string } });
+      res.status(200).json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getCategories = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const categories = [
