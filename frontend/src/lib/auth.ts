@@ -10,6 +10,17 @@ export function setToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
+export function setRefreshToken(token: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('refreshToken', token);
+  }
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('refreshToken');
+}
+
 export function removeToken(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('token');

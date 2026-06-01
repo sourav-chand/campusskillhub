@@ -33,6 +33,7 @@ export function useAuth() {
       const { tokens, user: userData } = data.data;
       const normalized = normalizeUser(userData);
       authLib.setToken(tokens.accessToken);
+      authLib.setRefreshToken(tokens.refreshToken);
       authLib.setUser(normalized);
       setToken(tokens.accessToken);
       setUser(normalized);

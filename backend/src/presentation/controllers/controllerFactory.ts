@@ -89,7 +89,7 @@ const tokenService = {
   generateTokens: async (payload: { userId: string; email: string; role: string; collegeId?: string }) => ({
     accessToken: JWT.generateAccessToken(payload),
     refreshToken: JWT.generateRefreshToken(payload),
-    expiresIn: 900,
+    expiresIn: 3600,
   }),
   verifyRefreshToken: async (token: string) => JWT.verifyRefreshToken(token),
 };
