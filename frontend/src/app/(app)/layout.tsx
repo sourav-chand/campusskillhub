@@ -17,6 +17,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
+    // Prevent html and body from scrolling to avoid double scrollbars
+    const html = document.documentElement;
+    const body = document.body;
+    
+    const originalHtmlOverflow = html.style.overflow;
+    const originalHtmlHeight = html.style.height;
+    const originalBodyOverflow = body.style.overflow;
+    const originalBodyHeight = body.style.height;
+
+    html.style.overflow = 'hidden';
+    html.style.height = '100%';
+    body.style.overflow = 'hidden';
+    body.style.height = '100%';
+
+    return () => {
+      html.style.overflow = originalHtmlOverflow;
+      html.style.height = originalHtmlHeight;
+      body.style.overflow = originalBodyOverflow;
+      body.style.height = originalBodyHeight;
+    };
+  }, []);
+
+  React.useEffect(() => {
     if (mounted && !isAuthenticated) {
       router.push('/login');
     }
