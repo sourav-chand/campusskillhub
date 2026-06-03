@@ -261,16 +261,33 @@ export class CourseController {
 
   addMcqTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const questions = req.body.questions as Array<{ questionText: string; questionType?: string; points?: number; explanation?: string; options: Array<{ text: string; isCorrect: boolean }> }> | undefined;
       const test = await container.prisma.mCQTest.create({
         data: {
           title: req.body.title,
           description: req.body.description,
           duration: req.body.duration ?? 30,
           passingScore: req.body.passingScore ?? 40,
-          totalQuestions: req.body.totalQuestions ?? 0,
+          totalQuestions: questions?.length ?? (req.body.totalQuestions ?? 0),
           scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : undefined,
           course: { connect: { id: req.params.id as string } },
+          ...(questions?.length ? {
+            questions: {
+              create: questions.map((q, idx) => ({
+                text: q.questionText,
+                marks: q.points ?? 1,
+                order: idx + 1,
+                options: {
+                  create: q.options.map((o) => ({
+                    text: o.text,
+                    isCorrect: o.isCorrect ?? false,
+                  })),
+                },
+              })),
+            },
+          } : {}),
         },
+        include: { questions: { include: { options: true }, orderBy: { order: 'asc' } } },
       });
       res.status(201).json({ success: true, data: { ...test, _id: test.id } });
     } catch (error) {
@@ -300,6 +317,85 @@ export class CourseController {
   deleteMcqTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await container.prisma.mCQTest.delete({ where: { id: req.params.mcqId as string } });
+      res.status(200).json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addMcqQuestion = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { mcqId } = req.params;
+      const { questionText, questionType, points, explanation, options } = req.body;
+      const lastQuestion = await container.prisma.mCQQuestion.findFirst({
+        where: { testId: mcqId },
+        orderBy: { order: 'desc' },
+      });
+      const question = await container.prisma.mCQQuestion.create({
+        data: {
+          text: questionText,
+          marks: points ?? 1,
+          order: (lastQuestion?.order ?? 0) + 1,
+          testId: mcqId,
+          options: {
+            create: (options as Array<{ text: string; isCorrect: boolean }>).map((o) => ({
+              text: o.text,
+              isCorrect: o.isCorrect ?? false,
+            })),
+          },
+        },
+        include: { options: true },
+      });
+      await container.prisma.mCQTest.update({
+        where: { id: mcqId },
+        data: { totalQuestions: { increment: 1 } },
+      });
+      res.status(201).json({ success: true, data: { ...question, _id: question.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateMcqQuestion = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { mcqId, questionId } = req.params;
+      const { questionText, points, explanation, options } = req.body;
+      const question = await container.prisma.mCQQuestion.update({
+        where: { id: questionId },
+        data: {
+          text: questionText ?? undefined,
+          marks: points ?? undefined,
+        },
+        include: { options: true },
+      });
+      if (options) {
+        await container.prisma.mCQOption.deleteMany({ where: { questionId } });
+        await container.prisma.mCQOption.createMany({
+          data: (options as Array<{ text: string; isCorrect: boolean }>).map((o) => ({
+            text: o.text,
+            isCorrect: o.isCorrect ?? false,
+            questionId,
+          })),
+        });
+      }
+      const updated = await container.prisma.mCQQuestion.findUnique({
+        where: { id: questionId },
+        include: { options: true },
+      });
+      res.status(200).json({ success: true, data: { ...updated, _id: updated!.id } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteMcqQuestion = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { mcqId, questionId } = req.params;
+      await container.prisma.mCQQuestion.delete({ where: { id: questionId } });
+      await container.prisma.mCQTest.update({
+        where: { id: mcqId },
+        data: { totalQuestions: { decrement: 1 } },
+      });
       res.status(200).json({ success: true, data: null });
     } catch (error) {
       next(error);

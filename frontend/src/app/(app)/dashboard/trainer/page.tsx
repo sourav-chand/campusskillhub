@@ -263,8 +263,8 @@ export default function TrainerDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {courses.slice(0, 5).map((course) => (
-                  <TableRow key={course._id}>
+                {courses.slice(0, 5).map((course, index) => (
+                  <TableRow key={course._id ?? `course-${index}`}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded bg-muted text-xs font-medium">
