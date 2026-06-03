@@ -59,9 +59,13 @@ export default function UsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleToggleStatus = async (userId: string) => {
+  const handleToggleStatus = async (userId: string, currentActive: boolean) => {
     try {
-      await userService.deactivate(userId);
+      if (currentActive) {
+        await userService.deactivate(userId);
+      } else {
+        await userService.activate(userId);
+      }
       fetchUsers();
     } catch {
     }
@@ -207,7 +211,7 @@ export default function UsersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleToggleStatus(userId)}
+                          onClick={() => handleToggleStatus(userId, active)}
                         >
                           {active ? 'Deactivate' : 'Activate'}
                         </Button>

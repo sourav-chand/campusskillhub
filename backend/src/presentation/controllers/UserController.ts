@@ -72,4 +72,14 @@ export class UserController {
       next(error);
     }
   };
+
+  activate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { userRepository } = container.repositories;
+      await (userRepository as never as { update: (id: string, data: { isActive: boolean }) => Promise<unknown> }).update(req.params.id, { isActive: true });
+      res.status(200).json({ success: true, message: 'User activated successfully' });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

@@ -10,4 +10,7 @@ export const userService = {
 
   deactivate: (id: string) =>
     api.patch<ApiResponse<void>>(`/users/${id}/deactivate`),
+
+  activate: (id: string) =>
+    api.patch<ApiResponse<void>>(`/users/${id}/activate`),
 };
