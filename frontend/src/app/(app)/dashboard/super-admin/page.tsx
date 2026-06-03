@@ -282,8 +282,8 @@ export default function SuperAdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingColleges.map((college) => (
-                  <TableRow key={college._id}>
+                {pendingColleges.map((college, index) => (
+                  <TableRow key={college._id || college.email || index}>
                     <TableCell className="font-medium">{college.name}</TableCell>
                     <TableCell>{college.email}</TableCell>
                     <TableCell>{college.city}</TableCell>
