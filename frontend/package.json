@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node init && next dev",
-    "build": "node init && next build",
-    "start": "node init && next start",
+    "dev": "node init && node next dev",
+    "build": "node init && node next build",
+    "start": "node init && node next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },

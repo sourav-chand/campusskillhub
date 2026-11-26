@@ -4,8 +4,8 @@
   "description": "CampusSkill Hub - Training and Student Progress Management Platform",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "node init && tsx watch src/server.ts",
-    "build": "node init && tsc",
+    "dev": "node init && node tsx watch src/server.ts",
+    "build": "node init && node tsc",
     "start": "node init && node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
